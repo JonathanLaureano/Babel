@@ -1,0 +1,30 @@
+<div class="novel-list-container">
+  <h1>Babel - Machine Translated Novels</h1>
+  
+  <div *ngIf="loading" class="loading">Loading novels...</div>
+  <div *ngIf="error" class="error">{{ error }}</div>
+  
+  <div *ngIf="!loading && novels.length === 0" class="empty-state">
+    <p>No novels available yet. Start by adding some novels to the collection.</p>
+  </div>
+  
+  <div class="novels-grid" *ngIf="!loading && novels.length > 0">
+    <div class="novel-card" *ngFor="let novel of novels">
+      <h2>{{ novel.title }}</h2>
+      <p class="author">by {{ novel.author }}</p>
+      <p class="languages">
+        <span class="badge">{{ novel.original_language }}</span> 
+        → 
+        <span class="badge">{{ novel.target_language }}</span>
+      </p>
+      <p class="description">{{ novel.description }}</p>
+      <div class="novel-meta">
+        <span class="chapter-count" *ngIf="novel.chapter_count">
+          {{ novel.chapter_count }} chapters
+        </span>
+      </div>
+      <a [routerLink]="['/novel', novel.id]" class="read-button">Read</a>
+    </div>
+  </div>
+</div>
+

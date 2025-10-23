@@ -1,0 +1,40 @@
+<div class="novel-detail-container">
+  <a routerLink="/" class="back-link">← Back to novels</a>
+  
+  <div *ngIf="loading" class="loading">Loading...</div>
+  <div *ngIf="error" class="error">{{ error }}</div>
+  
+  <div *ngIf="novel && !loading" class="novel-detail">
+    <h1>{{ novel.title }}</h1>
+    <p class="author">by {{ novel.author }}</p>
+    <p class="languages">
+      <span class="badge">{{ novel.original_language }}</span> 
+      → 
+      <span class="badge">{{ novel.target_language }}</span>
+    </p>
+    <p class="description">{{ novel.description }}</p>
+    
+    <div class="chapters-section">
+      <h2>Chapters</h2>
+      <div *ngIf="chapters.length === 0" class="empty-chapters">
+        No chapters available yet.
+      </div>
+      <div class="chapters-list" *ngIf="chapters.length > 0">
+        <div class="chapter-item" *ngFor="let chapter of chapters">
+          <h3>Chapter {{ chapter.chapter_number }}: {{ chapter.title }}</h3>
+          <div class="chapter-content">
+            <div class="content-section">
+              <h4>Original Text</h4>
+              <p>{{ chapter.original_content }}</p>
+            </div>
+            <div class="content-section">
+              <h4>Translation</h4>
+              <p>{{ chapter.translated_content }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
