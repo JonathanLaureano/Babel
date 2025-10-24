@@ -61,7 +61,7 @@ class SeriesViewSet(viewsets.ModelViewSet):
             series = Series.objects.filter(genres__name__iexact=genre_name)
             serializer = self.get_serializer(series, many=True)
             return Response(serializer.data)
-        return Response({'error': 'genre parameter is required'}, status.HTTP_400_BAD_REQUEST')
+        return Response({'error': 'genre parameter is required'}, status.HTTP_400_BAD_REQUEST)
 
 
 class SeriesGenreViewSet(viewsets.ModelViewSet):
