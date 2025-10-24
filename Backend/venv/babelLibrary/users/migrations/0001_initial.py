@@ -45,7 +45,6 @@ class Migration(migrations.Migration):
                 ('user_id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
                 ('username', models.CharField(max_length=50, unique=True)),
                 ('email', models.EmailField(max_length=255, unique=True)),
-                ('password_hash', models.CharField(blank=True, max_length=255, null=True)),
                 ('google_id', models.CharField(blank=True, max_length=255, null=True, unique=True)),
                 ('is_active', models.BooleanField(default=True)),
                 ('is_staff', models.BooleanField(default=False)),
