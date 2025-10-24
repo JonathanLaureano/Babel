@@ -32,13 +32,12 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = [
-            'user_id', 'username', 'email', 'password', 'google_id', 
+            'user_id', 'username', 'email', 'password',
             'role', 'role_name', 'is_active', 'created_at', 'updated_at'
         ]
         read_only_fields = ['user_id', 'created_at', 'updated_at']
         extra_kwargs = {
-            'password': {'write_only': True},
-            'google_id': {'required': False, 'allow_blank': True, 'allow_null': True}
+            'password': {'write_only': True}
         }
 
     def create(self, validated_data):
