@@ -70,7 +70,6 @@ class User(AbstractBaseUser, PermissionsMixin):
     user_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     username = models.CharField(max_length=50, unique=True)
     email = models.EmailField(max_length=255, unique=True)
-    password_hash = models.CharField(max_length=255, blank=True, null=True)  # For Django, this is handled by password field
     role = models.ForeignKey(Role, on_delete=models.RESTRICT, related_name='users')
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)  # Required for Django admin
