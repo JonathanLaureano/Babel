@@ -1,4 +1,4 @@
-from rest_framework import viewsets, permissions, filters
+from rest_framework import viewsets, permissions, filters, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
@@ -61,7 +61,7 @@ class SeriesViewSet(viewsets.ModelViewSet):
             series = Series.objects.filter(genres__name__iexact=genre_name)
             serializer = self.get_serializer(series, many=True)
             return Response(serializer.data)
-        return Response({'error': 'genre parameter is required'}, status=400)
+        return Response({'error': 'genre parameter is required'}, status.HTTP_400_BAD_REQUEST')
 
 
 class SeriesGenreViewSet(viewsets.ModelViewSet):
@@ -100,7 +100,7 @@ class ChapterViewSet(viewsets.ModelViewSet):
         if next_chapter:
             serializer = ChapterSerializer(next_chapter)
             return Response(serializer.data)
-        return Response({'message': 'No next chapter available'}, status=404)
+        return Response({'message': 'No next chapter available'}, status.HTTP_404_NOT_FOUND)
 
     @action(detail=True, methods=['get'])
     def previous(self, request, pk=None):
@@ -113,4 +113,4 @@ class ChapterViewSet(viewsets.ModelViewSet):
         if prev_chapter:
             serializer = ChapterSerializer(prev_chapter)
             return Response(serializer.data)
-        return Response({'message': 'No previous chapter available'}, status=404)
+        return Response({'message': 'No previous chapter available'}, status.HTTP_404_NOT_FOUND)
