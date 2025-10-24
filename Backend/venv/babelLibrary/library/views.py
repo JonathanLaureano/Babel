@@ -93,30 +93,24 @@ class ChapterViewSet(viewsets.ModelViewSet):
     def next(self, request, pk=None):
         """Get the next chapter in the series"""
         chapter = self.get_object()
-        try:
-            next_chapter = Chapter.objects.filter(
-                series=chapter.series,
-                chapter_number=chapter.chapter_number + 1
-            ).first()
-            if next_chapter:
-                serializer = ChapterSerializer(next_chapter)
-                return Response(serializer.data)
-            return Response({'message': 'No next chapter available'}, status=404)
-        except Chapter.DoesNotExist:
-            return Response({'message': 'No next chapter available'}, status=404)
+        next_chapter = Chapter.objects.filter(
+            series=chapter.series,
+            chapter_number=chapter.chapter_number + 1
+        ).first()
+        if next_chapter:
+            serializer = ChapterSerializer(next_chapter)
+            return Response(serializer.data)
+        return Response({'message': 'No next chapter available'}, status=404)
 
     @action(detail=True, methods=['get'])
     def previous(self, request, pk=None):
         """Get the previous chapter in the series"""
         chapter = self.get_object()
-        try:
-            prev_chapter = Chapter.objects.filter(
-                series=chapter.series,
-                chapter_number=chapter.chapter_number - 1
-            ).first()
-            if prev_chapter:
-                serializer = ChapterSerializer(prev_chapter)
-                return Response(serializer.data)
-            return Response({'message': 'No previous chapter available'}, status=404)
-        except Chapter.DoesNotExist:
-            return Response({'message': 'No previous chapter available'}, status=404)
+        prev_chapter = Chapter.objects.filter(
+            series=chapter.series,
+            chapter_number=chapter.chapter_number - 1
+        ).first()
+        if prev_chapter:
+            serializer = ChapterSerializer(prev_chapter)
+            return Response(serializer.data)
+        return Response({'message': 'No previous chapter available'}, status=404)
