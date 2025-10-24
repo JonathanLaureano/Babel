@@ -100,7 +100,7 @@ class ChapterViewSet(viewsets.ModelViewSet):
         if next_chapter:
             serializer = ChapterSerializer(next_chapter)
             return Response(serializer.data)
-        return Response({'message': 'No next chapter available'}, status.HTTP_404_NOT_FOUND)
+        return Response({'message': 'No next chapter available'}, status=status.HTTP_404_NOT_FOUND)
 
     @action(detail=True, methods=['get'])
     def previous(self, request, pk=None):
