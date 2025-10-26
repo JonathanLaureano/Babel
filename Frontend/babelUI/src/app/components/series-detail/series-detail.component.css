@@ -1,0 +1,209 @@
+.series-detail-container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.loading, .error {
+  text-align: center;
+  padding: 3rem;
+  font-size: 1.2rem;
+}
+
+.error {
+  color: #d32f2f;
+}
+
+.back-link {
+  margin-bottom: 2rem;
+}
+
+.back-link a {
+  color: #667eea;
+  text-decoration: none;
+  font-size: 1rem;
+}
+
+.back-link a:hover {
+  text-decoration: underline;
+}
+
+.series-header {
+  display: flex;
+  gap: 2rem;
+  margin-bottom: 3rem;
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.series-cover {
+  flex-shrink: 0;
+  width: 250px;
+  height: 350px;
+  overflow: hidden;
+  border-radius: 8px;
+  background: #f5f5f5;
+}
+
+.series-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.placeholder-cover {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 6rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.series-info {
+  flex: 1;
+}
+
+.series-info h1 {
+  margin: 0 0 1rem 0;
+  font-size: 2.5rem;
+  color: #333;
+}
+
+.series-meta {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  align-items: center;
+}
+
+.status {
+  padding: 0.5rem 1rem;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.status.ongoing {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.status.completed {
+  background: #e8f5e9;
+  color: #388e3c;
+}
+
+.status.hiatus {
+  background: #fff3e0;
+  color: #f57c00;
+}
+
+.chapters-count {
+  color: #666;
+  font-size: 1rem;
+}
+
+.genres {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.genre-tag {
+  background: #f0f0f0;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.description {
+  color: #555;
+  font-size: 1rem;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.chapters-section {
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.chapters-section h2 {
+  margin: 0 0 1.5rem 0;
+  color: #333;
+}
+
+.empty-chapters {
+  text-align: center;
+  padding: 2rem;
+  color: #666;
+}
+
+.chapters-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.chapter-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.2s;
+}
+
+.chapter-item:hover {
+  background: #f5f5f5;
+  border-color: #667eea;
+}
+
+.chapter-number {
+  font-weight: bold;
+  color: #667eea;
+  font-size: 1.1rem;
+  min-width: 50px;
+}
+
+.chapter-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.chapter-title {
+  font-size: 1rem;
+  color: #333;
+}
+
+.chapter-meta {
+  font-size: 0.85rem;
+  color: #666;
+  display: flex;
+  gap: 1rem;
+}
+
+@media (max-width: 768px) {
+  .series-header {
+    flex-direction: column;
+  }
+  
+  .series-cover {
+    width: 100%;
+    height: 300px;
+  }
+}
