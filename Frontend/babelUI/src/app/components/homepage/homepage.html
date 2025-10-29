@@ -1,0 +1,45 @@
+<div class="homepage-container">
+  <div class="hero-section">
+    <h1>Welcome to Babel</h1>
+    <p class="subtitle">Explore our collection of machine-translated novels</p>
+  </div>
+
+  <div *ngIf="loading" class="loading">
+    <p>Loading series...</p>
+  </div>
+
+  <div *ngIf="error" class="error">
+    <p>{{ error }}</p>
+  </div>
+
+  <div *ngIf="!loading && !error && series.length === 0" class="no-series">
+    <p>No series available yet.</p>
+  </div>
+
+  <div *ngIf="!loading && !error && series.length > 0" class="series-section">
+    <h2>Available Series</h2>
+    <div class="series-grid">
+      <div *ngFor="let s of series" class="series-card">
+        <a [routerLink]="['/series', s.series_id]">
+          <div class="series-image" *ngIf="s.cover_image_url">
+            <img [src]="s.cover_image_url" [alt]="s.title">
+          </div>
+          <div class="series-image placeholder" *ngIf="!s.cover_image_url">
+            <span>{{ s.title.charAt(0) }}</span>
+          </div>
+          <div class="series-info">
+            <h3>{{ s.title }}</h3>
+            <p class="description" *ngIf="s.description">{{ s.description }}</p>
+            <div class="series-meta">
+              <span class="chapter-count">{{ s.chapters_count }} chapters</span>
+              <span class="status" [class]="s.status.toLowerCase()">{{ s.status }}</span>
+            </div>
+            <div class="genres" *ngIf="s.genres && s.genres.length > 0">
+              <span *ngFor="let genre of s.genres" class="genre-tag">{{ genre.name }}</span>
+            </div>
+          </div>
+        </a>
+      </div>
+    </div>
+  </div>
+</div>

@@ -5,12 +5,12 @@ import { LibraryService } from '../../services/library.service';
 import { Series } from '../../models/series';
 
 @Component({
-  selector: 'app-series-list',
+  selector: 'app-homepage',
   imports: [CommonModule, RouterModule],
-  templateUrl: './series-list.component.html',
-  styleUrl: './series-list.component.css'
+  templateUrl: './homepage.html',
+  styleUrl: './homepage.css',
 })
-export class SeriesListComponent implements OnInit {
+export class Homepage implements OnInit {
   series: Series[] = [];
   loading = true;
   error: string | null = null;
@@ -22,15 +22,21 @@ export class SeriesListComponent implements OnInit {
   }
 
   loadSeries(): void {
+    this.loading = true;
+    this.error = null;
+
+    console.log('Loading series...');
+
     this.libraryService.getSeries().subscribe({
       next: (data) => {
+        console.log('Series data received:', data);
         this.series = data;
         this.loading = false;
       },
       error: (err) => {
+        console.error('Error loading series:', err);
         this.error = 'Failed to load series. Please try again later.';
         this.loading = false;
-        console.error('Error loading series:', err);
       }
     });
   }
