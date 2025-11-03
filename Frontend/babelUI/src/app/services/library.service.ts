@@ -6,13 +6,6 @@ import { Series } from '../models/series';
 import { Chapter, ChapterListItem } from '../models/chapter';
 import { Genre } from '../models/genre';
 
-interface PaginatedResponse<T> {
-  count: number;
-  next: string | null;
-  previous: string | null;
-  results: T[];
-}
-
 @Injectable({
   providedIn: 'root'
 })
