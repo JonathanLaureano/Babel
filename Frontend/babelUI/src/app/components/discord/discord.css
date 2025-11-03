@@ -1,0 +1,46 @@
+.discord-container {
+  max-width: 800px;
+  margin: 4rem auto;
+  padding: 2rem;
+  text-align: center;
+}
+
+.discord-content {
+  background: white;
+  border-radius: 8px;
+  padding: 3rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.discord-content h1 {
+  font-size: 2rem;
+  color: #333;
+  margin-bottom: 1rem;
+}
+
+.discord-content p {
+  font-size: 1.1rem;
+  color: #666;
+  margin-bottom: 1rem;
+  line-height: 1.6;
+}
+
+.placeholder-text {
+  font-style: italic;
+  color: #999;
+}
+
+@media (max-width: 768px) {
+  .discord-container {
+    margin: 2rem auto;
+    padding: 1rem;
+  }
+
+  .discord-content {
+    padding: 2rem 1.5rem;
+  }
+
+  .discord-content h1 {
+    font-size: 1.5rem;
+  }
+}

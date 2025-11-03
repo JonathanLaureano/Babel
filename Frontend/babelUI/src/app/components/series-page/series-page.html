@@ -1,0 +1,80 @@
+<div class="series-page-container">
+  <div *ngIf="loading" class="loading">
+    <p>Loading series details...</p>
+  </div>
+
+  <div *ngIf="error" class="error">
+    <p>{{ error }}</p>
+  </div>
+
+  <div *ngIf="!loading && !error && series" class="series-details">
+    <!-- Back to All Series -->
+    <div class="back-link">
+      <a routerLink="/series">← Back to All Series</a>
+    </div>
+
+    <!-- Series Header -->
+    <div class="series-header">
+      <div class="series-cover">
+        <img 
+          [src]="series.cover_image_url || 'https://via.placeholder.com/400x600.png?text=No+Cover'" 
+          [alt]="series.title"
+        />
+      </div>
+      
+      <div class="series-info">
+        <h1>{{ series.title }}</h1>
+        
+        <div class="series-meta">
+          <span class="status" [class]="series.status.toLowerCase()">
+            {{ series.status }}
+          </span>
+          <span class="chapter-count">{{ chapters.length || 0 }} Chapters</span>
+        </div>
+
+        <div class="genres" *ngIf="series.genres && series.genres.length > 0">
+          <span *ngFor="let genre of series.genres" class="genre-tag">
+            {{ genre.name }}
+          </span>
+        </div>
+
+        <p class="description" *ngIf="series.description">
+          {{ series.description }}
+        </p>
+
+        <div class="series-dates">
+          <p><strong>Created:</strong> {{ series.created_at | date:'mediumDate' }}</p>
+          <p><strong>Last Updated:</strong> {{ series.updated_at | date:'mediumDate' }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chapters List -->
+    <div class="chapters-section">
+      <h2>Chapters</h2>
+      
+      <div *ngIf="chapters && chapters.length === 0" class="no-chapters">
+        <p>No chapters available yet.</p>
+      </div>
+
+      <div *ngIf="chapters && chapters.length > 0" class="chapters-list">
+        <a 
+          *ngFor="let chapter of chapters" 
+          [routerLink]="['/series', series.series_id, 'chapter', chapter.chapter_id]"
+          class="chapter-item"
+        >
+          <div class="chapter-number">Ch. {{ chapter.chapter_number }}</div>
+          <div class="chapter-info">
+            <h3 class="chapter-title">{{ chapter.title }}</h3>
+            <div class="chapter-meta">
+              <span *ngIf="chapter.word_count">{{ chapter.word_count }} words</span>
+              <span *ngIf="chapter.publication_date">
+                {{ chapter.publication_date | date:'mediumDate' }}
+              </span>
+            </div>
+          </div>
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
