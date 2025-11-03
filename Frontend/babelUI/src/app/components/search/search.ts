@@ -39,11 +39,9 @@ export class SearchComponent implements OnDestroy {
     }
 
     this.loading = true;
-    this.libraryService.getSeries().subscribe({
-      next: (allSeries) => {
-        this.results = allSeries.filter((series) =>
-          series.title.toLowerCase().includes(searchQuery.toLowerCase())
-        );
+    this.libraryService.getSeries(searchQuery).subscribe({
+      next: (series) => {
+        this.results = series;
         this.loading = false;
       },
       error: (err) => {

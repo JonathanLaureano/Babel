@@ -26,18 +26,12 @@ export class ChapterPage implements OnInit {
 
   ngOnInit(): void {
     const chapterId = this.route.snapshot.paramMap.get('chapterId');
-    if (chapterId) {
-      this.libraryService.getChapter(chapterId).subscribe({
-        next: (chapter) => {
-          this.chapter = chapter;
-          this.loading = false;
-        },
-        error: (err) => {
-          console.error('Error loading chapter:', err);
-          this.error = 'Failed to load chapter.';
-          this.loading = false;
-        }
-      });
+    const seriesId = this.route.snapshot.paramMap.get('id');
+    if (seriesId && chapterId) {
+      this.loadChapterData(seriesId, chapterId);
+    } else {
+      this.error = 'Missing series or chapter ID.';
+      this.loading = false;
     }
   }
 

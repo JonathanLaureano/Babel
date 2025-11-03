@@ -14,6 +14,7 @@ class GenreViewSet(viewsets.ModelViewSet):
     ViewSet for viewing and editing Genre instances.
     """
     queryset = Genre.objects.all()
+    pagination_class = None
     serializer_class = GenreSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     filter_backends = [filters.SearchFilter]
@@ -33,6 +34,7 @@ class SeriesViewSet(viewsets.ModelViewSet):
     ViewSet for viewing and editing Series instances.
     """
     queryset = Series.objects.all().prefetch_related('genres', 'chapters')
+    pagination_class = None
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['status']
