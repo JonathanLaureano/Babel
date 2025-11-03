@@ -1,0 +1,38 @@
+<div class="search-container">
+  <input
+    type="text"
+    class="search-box"
+    placeholder="Search series..."
+    [(ngModel)]="query"
+    (input)="onInputChange()"
+  />
+  <div *ngIf="query" class="search-results" role="listbox" aria-live="polite" aria-label="Search results">
+    <div *ngIf="loading" class="search-loading">Searching...</div>
+    
+    <div *ngIf="!loading && results.length > 0">
+      <div
+        *ngFor="let series of results"
+        class="search-result-item"
+        (click)="selectSeries(series.series_id)"
+        role="option"
+        tabindex="0"
+        (keydown.enter)="selectSeries(series.series_id)"
+        (keydown.space)="selectSeries(series.series_id)"
+      >
+        <img
+          [src]="series.cover_image_url || 'https://via.placeholder.com/60x80.png?text=No+Cover'"
+          [alt]="'Cover for ' + series.title"
+          class="search-result-image"
+        />
+        <div class="search-result-content">
+          <h4 class="search-result-title">{{ series.title }}</h4>
+          <p class="search-result-status">{{ series.status }}</p>
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="!loading && results.length === 0" class="search-no-results">
+      No series found for "{{ query }}"
+    </div>
+  </div>
+</div>

@@ -1,0 +1,26 @@
+<div class="all-series-container">
+  <h2>All Series</h2>
+
+  <div *ngIf="loading" class="loading">Loading...</div>
+
+  <div *ngIf="error" class="error-message">{{ error }}</div>
+
+  <div *ngIf="!loading && !error" class="series-grid">
+    <a
+      *ngFor="let s of series"
+      [routerLink]="['/series', s.series_id]"
+      class="series-card-link"
+    >
+      <div class="series-card">
+        <img
+          [src]="s.cover_image_url || 'https://via.placeholder.com/150x220.png?text=No+Cover'"
+          [alt]="'Cover for ' + s.title"
+          class="series-cover-image"
+        />
+        <h4 class="series-title">{{ s.title }}</h4>
+      </div>
+    </a>
+  </div>
+
+  <p *ngIf="!loading && !error && series.length === 0">No series found.</p>
+</div>

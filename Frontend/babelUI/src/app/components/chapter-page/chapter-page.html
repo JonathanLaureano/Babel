@@ -1,0 +1,36 @@
+<div *ngIf="loading" class="loading">Loading...</div>
+
+<div *ngIf="error" class="error-message">{{ error }}</div>
+
+<div *ngIf="!loading && !error && !chapter" class="error-message">Chapter not found.</div>
+
+<div *ngIf="!loading && !error && chapter" class="chapter-page-container">
+  <div class="chapter-header">
+    <h1>{{ chapter.title }}</h1>
+    <p class="chapter-meta">Chapter {{ chapter.chapter_number }} of {{ chapter.series_title }}</p>
+  </div>
+
+  <div class="chapter-content">
+    <p>{{ chapter.content }}</p>
+  </div>
+
+  <div class="chapter-navigation">
+    <a
+      *ngIf="prevChapter"
+      [routerLink]="['/series', chapter.series, 'chapter', prevChapter.chapter_id]"
+      class="nav-link prev-link"
+    >
+      &larr; Previous Chapter
+    </a>
+    <div *ngIf="!prevChapter"></div>
+
+    <a
+      *ngIf="nextChapter"
+      [routerLink]="['/series', chapter.series, 'chapter', nextChapter.chapter_id]"
+      class="nav-link next-link"
+    >
+      Next Chapter &rarr;
+    </a>
+    <div *ngIf="!nextChapter"></div>
+  </div>
+</div>

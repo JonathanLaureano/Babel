@@ -34,10 +34,7 @@ export class LibraryService {
   }
 
   getSeriesChapters(seriesId: string): Observable<ChapterListItem[]> {
-    return this.http.get<PaginatedResponse<ChapterListItem>>(`${this.apiUrl}/series/${seriesId}/chapters/`)
-      .pipe(
-        map(response => response.results)
-      );
+    return this.http.get<ChapterListItem[]>(`${this.apiUrl}/series/${seriesId}/chapters/`);
   }
 
   // Chapter endpoints
