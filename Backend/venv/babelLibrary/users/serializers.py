@@ -37,11 +37,21 @@ class UserSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['user_id', 'created_at', 'updated_at']
         extra_kwargs = {
-            'password': {'write_only': True}
+            'password': {'write_only': True},
+            'role': {'required': False}  # Make role optional
         }
 
     def create(self, validated_data):
         password = validated_data.pop('password', None)
+        
+        # Set default role to 'Reader' if not provided
+        if 'role' not in validated_data:
+            try:
+                reader_role = Role.objects.get(name='Reader')
+                validated_data['role'] = reader_role
+            except Role.DoesNotExist:
+                raise serializers.ValidationError({'role': 'Reader role not found. Please create it first.'})
+        
         user = User(**validated_data)
         if password:
             user.set_password(password)

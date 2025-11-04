@@ -21,6 +21,10 @@
     </div>
     <div class="right-section">
       <app-search />
+      <a *ngIf="!isLoggedIn" routerLink="/login" class="login-button">Login</a>
+      <a *ngIf="isLoggedIn" routerLink="/profile" class="profile-icon">
+        <span class="profile-icon-circle">👤</span>
+      </a>
     </div>
   </div>
 </header>
