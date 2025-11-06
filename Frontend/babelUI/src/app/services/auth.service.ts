@@ -24,13 +24,15 @@ export class AuthService {
 
   login(credentials: LoginCredentials): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.apiUrl}/login/`, credentials).pipe(
-      tap(response => {
-        sessionStorage.setItem('access_token', response.access);
-        sessionStorage.setItem('refresh_token', response.refresh);
-        sessionStorage.setItem('currentUser', JSON.stringify(response.user));
-        this.currentUserSubject.next(response.user);
-      })
+      tap(response => this.setAuthResponse(response))
     );
+  }
+
+  setAuthResponse(response: AuthResponse): void {
+    sessionStorage.setItem('access_token', response.access);
+    sessionStorage.setItem('refresh_token', response.refresh);
+    sessionStorage.setItem('currentUser', JSON.stringify(response.user));
+    this.currentUserSubject.next(response.user);
   }
 
   logout(): void {

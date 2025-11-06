@@ -68,10 +68,7 @@ export class Register implements OnInit {
     this.userService.createUser(this.registerData).subscribe({
       next: (response) => {
         // Store authentication tokens and user data from registration response
-        sessionStorage.setItem('access_token', response.access);
-        sessionStorage.setItem('refresh_token', response.refresh);
-        sessionStorage.setItem('currentUser', JSON.stringify(response.user));
-        this.authService.updateCurrentUser(response.user);
+        this.authService.setAuthResponse(response);
         
         // Navigate to home page
         this.router.navigate(['/']);
