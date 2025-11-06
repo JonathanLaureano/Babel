@@ -49,7 +49,7 @@ export class AuthService implements OnDestroy {
   setAuthResponse(response: AuthResponse): void {
     sessionStorage.setItem('access_token', response.access);
     sessionStorage.setItem('refresh_token', response.refresh);
-    sessionStorage.setItem('currentUser', JSON.stringify(response.user));
+    sessionStorage.setItem('currentUserId', response.user.user_id);
     this.currentUserSubject.next(response.user);
   }
 
@@ -57,6 +57,7 @@ export class AuthService implements OnDestroy {
     sessionStorage.removeItem('access_token');
     sessionStorage.removeItem('refresh_token');
     sessionStorage.removeItem('currentUserId');
+    sessionStorage.removeItem('currentUser');
     this.currentUserSubject.next(null);
   }
 
