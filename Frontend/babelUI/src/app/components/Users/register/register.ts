@@ -69,6 +69,7 @@ export class Register implements OnInit {
       next: (response) => {
         // Store authentication tokens and user data from registration response
         this.authService.setAuthResponse(response);
+        this.loading = false;
         
         // Navigate to home page
         this.router.navigate(['/']);

@@ -81,7 +81,7 @@ class UserViewSet(viewsets.ModelViewSet):
         headers = self.get_success_headers(serializer.data)
         
         # Generate JWT tokens for the newly created user
-        user = User.objects.get(user_id=serializer.data['user_id'])
+        user = serializer.instance
         refresh = RefreshToken.for_user(user)
         
         # Return user data along with authentication tokens
