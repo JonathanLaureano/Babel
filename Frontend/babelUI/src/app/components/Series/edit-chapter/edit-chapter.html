@@ -1,0 +1,24 @@
+<div class="form-container">
+  <a routerLink="/staff" class="back-link">← Back to Admin Panel</a>
+  <h2>Edit Chapter</h2>
+  <div *ngIf="loading">Loading chapter data...</div>
+  <div *ngIf="error" class="error-message">{{ error }}</div>
+
+  <form *ngIf="!loading && chapter" (ngSubmit)="onSubmit()" #chapterForm="ngForm">
+    <div class="form-group">
+      <label>Chapter Number</label>
+      <p class="form-static-text">{{ chapterUpdateData.chapter_number }}</p>
+    </div>
+    <div class="form-group">
+      <label for="title">Title</label>
+      <input type="text" id="title" name="title" [(ngModel)]="chapterUpdateData.title" required>
+    </div>
+    <div class="form-group">
+      <label for="content">Content</label>
+      <textarea id="content" name="content" [(ngModel)]="chapterUpdateData.content" rows="15" required></textarea>
+    </div>
+    <button type="submit" [disabled]="!chapterForm.form.valid || loading">
+      {{ loading ? 'Updating...' : 'Update Chapter' }}
+    </button>
+  </form>
+</div>

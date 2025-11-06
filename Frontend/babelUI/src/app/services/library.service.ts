@@ -27,6 +27,18 @@ export class LibraryService {
     return this.http.get<Series>(`${this.apiUrl}/series/${id}/`);
   }
 
+  createSeries(seriesData: any): Observable<Series> {
+    return this.http.post<Series>(`${this.apiUrl}/series/`, seriesData);
+  }
+
+  updateSeries(id: string, seriesData: any): Observable<Series> {
+    return this.http.patch<Series>(`${this.apiUrl}/series/${id}/`, seriesData);
+  }
+
+  deleteSeries(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/series/${id}/`);
+  }
+
   getSeriesChapters(seriesId: string): Observable<ChapterListItem[]> {
     return this.http.get<ChapterListItem[]>(`${this.apiUrl}/series/${seriesId}/chapters/`);
   }
@@ -34,6 +46,18 @@ export class LibraryService {
   // Chapter endpoints
   getChapter(id: string): Observable<Chapter> {
     return this.http.get<Chapter>(`${this.apiUrl}/chapters/${id}/`);
+  }
+
+  createChapter(chapterData: any): Observable<Chapter> {
+    return this.http.post<Chapter>(`${this.apiUrl}/chapters/`, chapterData);
+  }
+
+  updateChapter(id: string, chapterData: any): Observable<Chapter> {
+    return this.http.patch<Chapter>(`${this.apiUrl}/chapters/${id}/`, chapterData);
+  }
+
+  deleteChapter(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/chapters/${id}/`);
   }
 
   getNextChapter(id: string): Observable<Chapter> {

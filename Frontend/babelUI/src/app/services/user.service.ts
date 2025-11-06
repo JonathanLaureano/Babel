@@ -1,8 +1,9 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Observable, throwError } from 'rxjs';
+import { Observable, throwError, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { User, UpdateUserRequest, Role, RegisterData, AuthResponse} from '../models/user';
+import { AuthService } from './auth.service';
 
 @Injectable({
   providedIn: 'root'
@@ -11,12 +12,18 @@ export class UserService {
   private apiUrl = 'http://localhost:8000/api'; // Adjust this to match your backend URL
 
 
-  constructor(private http: HttpClient) { }
+  constructor(private http: HttpClient, private authService: AuthService) { }
 
   /**
-   * Get all users
+   * Get all users (only available to staff)
    */
   getUsers(): Observable<User[]> {
+    const currentUser = this.authService.getCurrentUser();
+    if (!currentUser?.is_staff) {
+      // Return an empty array or an observable with an error if the user is not staff
+      console.warn('getUsers() called by a non-staff user. Aborting request.');
+      return of([]); // Return an empty array to prevent unauthorized calls
+    }
     return this.http.get<User[]>(`${this.apiUrl}/users/`)
       .pipe(catchError(this.handleError));
   }

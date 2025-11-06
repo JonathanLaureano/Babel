@@ -7,6 +7,11 @@ import { Discord } from './components/General/discord/discord';
 import { Login } from './components/Users/login/login';
 import { Register } from './components/Users/register/register';
 import { Profile } from './components/Users/profile/profile';
+import { Admin } from './components/Admin/admin/admin';
+import { AddSeries } from './components/Series/add-series/add-series';
+import { EditSeries } from './components/Series/edit-series/edit-series';
+import { AddChapter } from './components/Series/add-chapter/add-chapter';
+import { EditChapter } from './components/Series/edit-chapter/edit-chapter';
 
 export const routes: Routes = [
   { path: '', component: Homepage },
@@ -16,5 +21,10 @@ export const routes: Routes = [
   { path: 'discord', component: Discord },
   { path: 'login', component: Login },
   { path: 'register', component: Register },
-  { path: 'profile', component: Profile }
+  { path: 'profile', component: Profile },
+  { path: 'staff', component: Admin },
+  { path: 'admin/add-series', component: AddSeries },
+  { path: 'admin/edit-series/:id', component: EditSeries },
+  { path: 'admin/add-chapter/:seriesId', component: AddChapter },
+  { path: 'admin/edit-chapter/:id', component: EditChapter }
 ];
