@@ -110,7 +110,6 @@ export class Profile implements OnInit {
       next: () => {
         // Logout and redirect
         this.authService.logout();
-        alert('Your account has been successfully deleted.');
         this.router.navigate(['/']);
       },
       error: (err: any) => {

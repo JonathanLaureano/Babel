@@ -17,9 +17,9 @@ export class Register implements OnInit {
     username: '',
     email: '',
     password: '',
-    confirmPassword: '',
     role: ''  // Will be set to 'Reader' by default on initialization
   };
+  confirmPassword = '';
   error: string | null = null;
   loading = false;
 
@@ -50,7 +50,7 @@ export class Register implements OnInit {
       return;
     }
 
-    if (this.registerData.password !== this.registerData.confirmPassword) {
+    if (this.registerData.password !== this.confirmPassword) {
       this.error = 'Passwords do not match';
       return;
     }
@@ -65,21 +65,13 @@ export class Register implements OnInit {
 
     // Use userService.createUser for registration
     this.userService.createUser(this.registerData).subscribe({
-      next: () => {
-        // Auto-login after successful registration
-        this.authService.login({
-          username: this.registerData.username,
-          password: this.registerData.password
-        }).subscribe({
-          next: () => {
-            this.router.navigate(['/']);
-          },
-          error: (err) => {
-            console.error('Auto-login error:', err);
-            // If auto-login fails, redirect to login page for manual login
-            this.router.navigate(['/login']);
-          }
-        });
+      next: (response) => {
+        // Store authentication tokens and user data from registration response
+        this.authService.setAuthResponse(response);
+        this.loading = false;
+
+        // Navigate to home page
+        this.router.navigate(['/']);
       },
       error: (err) => {
         console.error('Registration error:', err);
