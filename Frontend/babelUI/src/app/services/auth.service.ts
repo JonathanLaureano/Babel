@@ -1,34 +1,42 @@
-import { Injectable } from '@angular/core';
+import { Injectable, OnDestroy } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, BehaviorSubject, tap } from 'rxjs';
+import { Observable, BehaviorSubject, tap, Subject, takeUntil } from 'rxjs';
 import { User, LoginCredentials, RegisterData, AuthResponse } from '../models/user';
 
 @Injectable({
   providedIn: 'root'
 })
-export class AuthService {
+export class AuthService implements OnDestroy {
   private apiUrl = 'http://localhost:8000/api/users';
   private currentUserSubject = new BehaviorSubject<User | null>(null);
   public currentUser$ = this.currentUserSubject.asObservable();
+  private destroy$ = new Subject<void>();
 
   constructor(private http: HttpClient) {
     this.loadUserFromStorage();
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   private loadUserFromStorage(): void {
     const userId = sessionStorage.getItem('currentUserId');
     if (userId) {
       // Fetch user details from backend instead of storing full user object
-      this.http.get<User>(`${this.apiUrl}/${userId}/`).subscribe({
-        next: (user) => {
-          this.currentUserSubject.next(user);
-        },
-        error: (err) => {
-          console.error('Failed to load user from storage:', err);
-          // Clear invalid user ID
-          sessionStorage.removeItem('currentUserId');
-        }
-      });
+      this.http.get<User>(`${this.apiUrl}/${userId}/`)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: (user) => {
+            this.currentUserSubject.next(user);
+          },
+          error: (err) => {
+            console.error('Failed to load user from storage:', err);
+            // Clear invalid user ID
+            sessionStorage.removeItem('currentUserId');
+          }
+        });
     }
   }
 
