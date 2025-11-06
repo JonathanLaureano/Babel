@@ -1,24 +1,18 @@
-import { Injectable, OnDestroy } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, BehaviorSubject, tap, Subject, takeUntil } from 'rxjs';
-import { User, LoginCredentials, RegisterData, AuthResponse } from '../models/user';
+import { Observable, BehaviorSubject, tap } from 'rxjs';
+import { User, LoginCredentials, AuthResponse } from '../models/user';
 
 @Injectable({
   providedIn: 'root'
 })
-export class AuthService implements OnDestroy {
+export class AuthService {
   private apiUrl = 'http://localhost:8000/api/users';
   private currentUserSubject = new BehaviorSubject<User | null>(null);
   public currentUser$ = this.currentUserSubject.asObservable();
-  private destroy$ = new Subject<void>();
 
   constructor(private http: HttpClient) {
     this.loadUserFromStorage();
-  }
-
-  ngOnDestroy(): void {
-    this.destroy$.next();
-    this.destroy$.complete();
   }
 
   private loadUserFromStorage(): void {
@@ -26,7 +20,6 @@ export class AuthService implements OnDestroy {
     if (userId) {
       // Fetch user details from backend instead of storing full user object
       this.http.get<User>(`${this.apiUrl}/${userId}/`)
-        .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: (user) => {
             this.currentUserSubject.next(user);
@@ -74,7 +67,6 @@ export class AuthService implements OnDestroy {
   }
 
   updateCurrentUser(user: User): void {
-    // Only store user ID instead of full user object for security
     sessionStorage.setItem('currentUserId', user.user_id);
     this.currentUserSubject.next(user);
   }
