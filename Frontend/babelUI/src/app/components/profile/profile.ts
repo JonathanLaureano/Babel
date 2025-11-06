@@ -79,8 +79,8 @@ export class Profile implements OnInit {
     this.userService.updateUser(this.user.user_id, this.editData).subscribe({
       next: (updatedUser) => {
         this.user = updatedUser;
-        // Update the user in session storage
-        sessionStorage.setItem('currentUser', JSON.stringify(updatedUser));
+        // Use the AuthService to update the current user, ensuring the observable is updated
+        this.authService.updateCurrentUser(updatedUser);
         this.success = 'Profile updated successfully!';
         this.isEditing = false;
         this.loading = false;
