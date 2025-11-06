@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
-import { User, UpdateUserRequest, Role, RegisterData} from '../models/user';
+import { User, UpdateUserRequest, Role, RegisterData, AuthResponse } from '../models/user';
 
 @Injectable({
   providedIn: 'root'
@@ -51,11 +51,11 @@ export class UserService {
 
   /**
    * Create a new user with Reader role by default
+   * Returns authentication tokens along with user data
    */
-  createUser(userRequest: RegisterData): Observable<User> {
-    // If no role is specified, it should default to Reader on the backend
-    // But we can also fetch and set it explicitly if needed
-    return this.http.post<User>(`${this.apiUrl}/users/`, userRequest)
+  createUser(userRequest: RegisterData): Observable<AuthResponse> {
+    // Backend returns JWT tokens along with user data upon successful registration
+    return this.http.post<AuthResponse>(`${this.apiUrl}/users/`, userRequest)
       .pipe(catchError(this.handleError));
   }
 

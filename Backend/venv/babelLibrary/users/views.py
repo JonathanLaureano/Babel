@@ -64,7 +64,7 @@ class UserViewSet(viewsets.ModelViewSet):
         return super().get_permissions()
 
     def create(self, request, *args, **kwargs):
-        """Override create to assign default reader role"""
+        """Override create to assign default reader role and return JWT tokens"""
         data = request.data.copy()
 
         # Get or create default 'Reader' role if not specified
@@ -79,7 +79,17 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+        
+        # Generate JWT tokens for the newly created user
+        user = User.objects.get(user_id=serializer.data['user_id'])
+        refresh = RefreshToken.for_user(user)
+        
+        # Return user data along with authentication tokens
+        return Response({
+            'access': str(refresh.access_token),
+            'refresh': str(refresh),
+            'user': serializer.data
+        }, status=status.HTTP_201_CREATED, headers=headers)
 
     # This will handle PUT requests to /api/users/{user_id}/
     def update(self, request, *args, **kwargs):

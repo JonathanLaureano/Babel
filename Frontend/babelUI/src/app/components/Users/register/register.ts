@@ -64,22 +64,17 @@ export class Register implements OnInit {
     this.error = null;
 
     // Use userService.createUser for registration
+    // Backend now returns JWT tokens directly upon successful registration
     this.userService.createUser(this.registerData).subscribe({
-      next: () => {
-        // Auto-login after successful registration
-        this.authService.login({
-          username: this.registerData.username,
-          password: this.registerData.password
-        }).subscribe({
-          next: () => {
-            this.router.navigate(['/']);
-          },
-          error: (err) => {
-            console.error('Auto-login error:', err);
-            // If auto-login fails, redirect to login page for manual login
-            this.router.navigate(['/login']);
-          }
-        });
+      next: (response) => {
+        // Store authentication tokens and user data from registration response
+        sessionStorage.setItem('access_token', response.access);
+        sessionStorage.setItem('refresh_token', response.refresh);
+        sessionStorage.setItem('currentUser', JSON.stringify(response.user));
+        this.authService.updateCurrentUser(response.user);
+        
+        // Navigate to home page
+        this.router.navigate(['/']);
       },
       error: (err) => {
         console.error('Registration error:', err);
