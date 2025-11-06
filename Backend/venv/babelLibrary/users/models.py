@@ -86,3 +86,8 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return self.username
+
+    @property
+    def id(self):
+        """Return user_id as id for compatibility with libraries expecting 'id' attribute"""
+        return self.user_id

@@ -55,4 +55,13 @@ export class AuthService {
   getToken(): string | null {
     return sessionStorage.getItem('access_token');
   }
+
+  isAuthenticated(): boolean {
+    return !!sessionStorage.getItem('access_token');
+  }
+
+  updateCurrentUser(user: User): void {
+    sessionStorage.setItem('currentUser', JSON.stringify(user));
+    this.currentUserSubject.next(user);
+  }
 }

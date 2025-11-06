@@ -31,7 +31,7 @@
         </div>
       </div>
 
-      <form *ngIf="isEditing" class="edit-form" (ngSubmit)="saveProfile()">
+      <form *ngIf="isEditing" class="edit-form" (ngSubmit)="updateProfile()">
         <div class="form-group">
           <label for="username">Username</label>
           <input
@@ -66,7 +66,7 @@
         </button>
         
         <div *ngIf="isEditing" class="edit-actions">
-          <button (click)="saveProfile()" class="save-button" [disabled]="loading">
+          <button (click)="updateProfile()" class="save-button" [disabled]="loading">
             Save Changes
           </button>
           <button (click)="toggleEdit()" class="cancel-button" [disabled]="loading">

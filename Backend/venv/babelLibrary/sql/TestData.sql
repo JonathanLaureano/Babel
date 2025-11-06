@@ -86,3 +86,7 @@ INSERT INTO Chapter (series_id, chapter_number, title, content, word_count, publ
 ((SELECT series_id FROM series_and_chapters WHERE title = 'School Life Comedy'), 1, 'The Exploding Volcano Project', 'Our science fair project had a minor hiccup...', 1000, CURRENT_TIMESTAMP - INTERVAL '1 day'),
 ((SELECT series_id FROM series_and_chapters WHERE title = 'Shadows Over Silverwood'), 1, 'The Old Mill', 'The moon cast long shadows over the abandoned mill...', 1600, CURRENT_TIMESTAMP - INTERVAL '9 days'),
 ((SELECT series_id FROM series_and_chapters WHERE title = 'The Second Chance Chef'), 1, 'A Dish Called Hope', 'He held the worn spatula, his hands trembling...', 1100, CURRENT_TIMESTAMP - INTERVAL '0 days'); -- Today
+
+INSERT INTO roles (role_id, name, description) VALUES 
+    (gen_random_uuid(), 'Admin', 'System administrator with full access to all features and management capabilities'),
+    (gen_random_uuid(), 'Reader', 'Standard user with access to read series and chapters');
