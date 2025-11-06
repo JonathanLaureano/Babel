@@ -1,14 +1,15 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
-import { LibraryService } from '../../services/library.service';
-import { Series } from '../../models/series';
+import { LibraryService } from '../../../services/library.service';
+import { Series } from '../../../models/series';
 
 @Component({
   selector: 'app-all-series',
   imports: [CommonModule, RouterModule],
   templateUrl: './all-series.html',
-  styleUrl: './all-series.css'
+  styleUrl: './all-series.css',
+  standalone: true,
 })
 export class AllSeries implements OnInit {
   series: Series[] = [];
@@ -26,11 +27,11 @@ export class AllSeries implements OnInit {
     this.error = null;
 
     this.libraryService.getSeries().subscribe({
-      next: (data) => {
+      next: (data: Series[]) => {
         this.series = data;
         this.loading = false;
       },
-      error: (err) => {
+      error: (err: any) => {
         console.error('Error loading series:', err);
         this.error = 'Failed to load series.';
         this.loading = false;

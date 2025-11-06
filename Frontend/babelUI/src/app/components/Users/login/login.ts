@@ -1,17 +1,19 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterModule } from '@angular/router';
-import { AuthService } from '../../services/auth.service';
+import { Router, RouterLink } from '@angular/router';
+import { AuthService } from '../../../services/auth.service';
+import { LoginCredentials } from '../../../models/user';
 
 @Component({
   selector: 'app-login',
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './login.html',
-  styleUrl: './login.css'
+  styleUrl: './login.css',
+  standalone: true,
 })
 export class Login {
-  credentials = {
+  credentials: LoginCredentials = {
     username: '',
     password: ''
   };
@@ -23,9 +25,9 @@ export class Login {
     private router: Router
   ) {}
 
-  onSubmit(): void {
+  login(): void {
     if (!this.credentials.username || !this.credentials.password) {
-      this.error = 'Please fill in all fields';
+      this.error = 'Username and password are required';
       return;
     }
 
@@ -36,8 +38,8 @@ export class Login {
       next: () => {
         this.router.navigate(['/']);
       },
-      error: (err) => {
-        console.error('Login error:', err);
+      error: (err: any) => {
+        console.error('Login failed:', err);
         this.error = err.error?.detail || 'Invalid username or password';
         this.loading = false;
       }

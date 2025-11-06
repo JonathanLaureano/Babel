@@ -3,14 +3,15 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Subject, debounceTime, takeUntil } from 'rxjs';
-import { LibraryService } from '../../services/library.service';
-import { Series } from '../../models/series';
+import { LibraryService } from '../../../services/library.service';
+import { Series } from '../../../models/series';
 
 @Component({
   selector: 'app-search',
   imports: [CommonModule, FormsModule],
   templateUrl: './search.html',
-  styleUrl: './search.css'
+  styleUrl: './search.css',
+  standalone: true,
 })
 export class SearchComponent implements OnDestroy {
   query = '';
@@ -40,11 +41,11 @@ export class SearchComponent implements OnDestroy {
 
     this.loading = true;
     this.libraryService.getSeries(searchQuery).subscribe({
-      next: (series) => {
+      next: (series: Series[]) => {
         this.results = series;
         this.loading = false;
       },
-      error: (err) => {
+      error: (err: any) => {
         console.error('Failed to fetch series for search:', err);
         this.results = [];
         this.loading = false;

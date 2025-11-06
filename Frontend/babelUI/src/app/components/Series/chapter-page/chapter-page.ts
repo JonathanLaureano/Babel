@@ -1,15 +1,17 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { LibraryService } from '../../services/library.service';
-import { Chapter, ChapterListItem } from '../../models/chapter';
+import { LibraryService } from '../../../services/library.service';
+import { Chapter, ChapterListItem } from '../../../models/chapter';
 import { forkJoin } from 'rxjs';
+import { Series } from '../../../models/series';
 
 @Component({
   selector: 'app-chapter-page',
   imports: [CommonModule, RouterModule],
   templateUrl: './chapter-page.html',
-  styleUrl: './chapter-page.css'
+  styleUrl: './chapter-page.css',
+  standalone: true,
 })
 export class ChapterPage implements OnInit {
   chapter: Chapter | null = null;
@@ -41,7 +43,7 @@ export class ChapterPage implements OnInit {
 
     // First get the series by slug to get the series_id
     this.libraryService.getSeriesById(id).subscribe({
-      next: (series) => {
+      next: (series: Series) => {
         // Now load chapter and all chapters using series_id
         forkJoin({
           chapter: this.libraryService.getChapter(chapterId),
@@ -50,24 +52,22 @@ export class ChapterPage implements OnInit {
           next: ({ chapter, allChapters }) => {
             this.chapter = chapter;
             
-            const sortedChapters = allChapters.sort((a: ChapterListItem, b: ChapterListItem) => b.chapter_number - a.chapter_number);
-            const currentIndex = sortedChapters.findIndex((c: ChapterListItem) => c.chapter_id === chapterId);
-            
-            if (currentIndex !== -1) {
-              this.nextChapter = currentIndex > 0 ? sortedChapters[currentIndex - 1] : null;
-              this.prevChapter = currentIndex < sortedChapters.length - 1 ? sortedChapters[currentIndex + 1] : null;
-            }
+            const sortedChapters = allChapters.sort((a: ChapterListItem, b: ChapterListItem) => a.chapter_number - b.chapter_number);
+            const currentIndex = sortedChapters.findIndex(c => c.chapter_id === chapter.chapter_id);
+
+            this.prevChapter = currentIndex > 0 ? sortedChapters[currentIndex - 1] : null;
+            this.nextChapter = currentIndex < sortedChapters.length - 1 ? sortedChapters[currentIndex + 1] : null;
             
             this.loading = false;
           },
-          error: (err) => {
-            console.error('Error loading chapter:', err);
-            this.error = 'Failed to load chapter.';
+          error: (err: any) => {
+            console.error('Error loading chapter details:', err);
+            this.error = 'Failed to load chapter details.';
             this.loading = false;
           }
         });
       },
-      error: (err) => {
+      error: (err: any) => {
         console.error('Error loading series:', err);
         this.error = 'Failed to load series.';
         this.loading = false;

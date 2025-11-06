@@ -2,15 +2,16 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { AuthService } from '../../services/auth.service';
-import { UserService } from '../../services/user.service';
-import { User } from '../../models/user';
+import { AuthService } from '../../../services/auth.service';
+import { UserService } from '../../../services/user.service';
+import { User } from '../../../models/user';
 
 @Component({
   selector: 'app-profile',
   imports: [CommonModule, FormsModule],
   templateUrl: './profile.html',
-  styleUrl: './profile.css'
+  styleUrl: './profile.css',
+  standalone: true,
 })
 export class Profile implements OnInit {
   user: User | null = null;
@@ -77,7 +78,7 @@ export class Profile implements OnInit {
     this.success = null;
 
     this.userService.updateUser(this.user.user_id, this.editData).subscribe({
-      next: (updatedUser) => {
+      next: (updatedUser: User) => {
         this.user = updatedUser;
         // Use the AuthService to update the current user, ensuring the observable is updated
         this.authService.updateCurrentUser(updatedUser);
@@ -85,7 +86,7 @@ export class Profile implements OnInit {
         this.isEditing = false;
         this.loading = false;
       },
-      error: (err) => {
+      error: (err: any) => {
         console.error('Update profile error:', err);
         this.error = err.message || 'Failed to update profile';
         this.loading = false;
@@ -112,7 +113,7 @@ export class Profile implements OnInit {
         alert('Your account has been successfully deleted.');
         this.router.navigate(['/']);
       },
-      error: (err) => {
+      error: (err: any) => {
         console.error('Delete profile error:', err);
         this.error = err.message || 'Failed to delete account';
         this.loading = false;
