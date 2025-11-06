@@ -16,9 +16,19 @@ export class AuthService {
   }
 
   private loadUserFromStorage(): void {
-    const userJson = sessionStorage.getItem('currentUser');
-    if (userJson) {
-      this.currentUserSubject.next(JSON.parse(userJson));
+    const userId = sessionStorage.getItem('currentUserId');
+    if (userId) {
+      // Fetch user details from backend instead of storing full user object
+      this.http.get<User>(`${this.apiUrl}/${userId}/`).subscribe({
+        next: (user) => {
+          this.currentUserSubject.next(user);
+        },
+        error: (err) => {
+          console.error('Failed to load user from storage:', err);
+          // Clear invalid user ID
+          sessionStorage.removeItem('currentUserId');
+        }
+      });
     }
   }
 
@@ -27,7 +37,8 @@ export class AuthService {
       tap(response => {
         sessionStorage.setItem('access_token', response.access);
         sessionStorage.setItem('refresh_token', response.refresh);
-        sessionStorage.setItem('currentUser', JSON.stringify(response.user));
+        // Only store user ID instead of full user object for security
+        sessionStorage.setItem('currentUserId', response.user.user_id);
         this.currentUserSubject.next(response.user);
       })
     );
@@ -36,7 +47,7 @@ export class AuthService {
   logout(): void {
     sessionStorage.removeItem('access_token');
     sessionStorage.removeItem('refresh_token');
-    sessionStorage.removeItem('currentUser');
+    sessionStorage.removeItem('currentUserId');
     this.currentUserSubject.next(null);
   }
 
@@ -53,7 +64,8 @@ export class AuthService {
   }
 
   updateCurrentUser(user: User): void {
-    sessionStorage.setItem('currentUser', JSON.stringify(user));
+    // Only store user ID instead of full user object for security
+    sessionStorage.setItem('currentUserId', user.user_id);
     this.currentUserSubject.next(user);
   }
 }

@@ -108,7 +108,8 @@ describe('UserService', () => {
     const createRequest: RegisterData = {
       username: 'newuser',
       email: 'new@example.com',
-      password: 'password123'
+      password: 'password123',
+      confirmPassword: 'password123'
     };
 
     const mockUser: User = {
