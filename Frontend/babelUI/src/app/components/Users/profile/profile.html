@@ -1,0 +1,87 @@
+<div class="profile-container">
+  <div class="profile-card">
+    <h1>My Profile</h1>
+
+    <div *ngIf="!user" class="loading">Loading profile...</div>
+
+    <div *ngIf="user" class="profile-content">
+      <div class="profile-avatar">
+        <div class="avatar-circle">{{ user.username.charAt(0).toUpperCase() }}</div>
+      </div>
+
+      <div *ngIf="!isEditing" class="profile-info">
+        <div class="info-group">
+          <label>Username</label>
+          <p>{{ user.username }}</p>
+        </div>
+
+        <div class="info-group">
+          <label>Email</label>
+          <p>{{ user.email }}</p>
+        </div>
+
+        <div class="info-group">
+          <label>Role</label>
+          <p>{{ user.role_name || user.role }}</p>
+        </div>
+
+        <div class="info-group">
+          <label>Member Since</label>
+          <p>{{ user.created_at | date:'mediumDate' }}</p>
+        </div>
+      </div>
+
+      <form *ngIf="isEditing" class="edit-form" (ngSubmit)="updateProfile()">
+        <div class="form-group">
+          <label for="username">Username</label>
+          <input
+            type="text"
+            id="username"
+            name="username"
+            [(ngModel)]="editData.username"
+            required
+            [disabled]="loading"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input
+            type="email"
+            id="email"
+            name="email"
+            [(ngModel)]="editData.email"
+            required
+            [disabled]="loading"
+          />
+        </div>
+      </form>
+
+      <div *ngIf="error" class="error-message">{{ error }}</div>
+      <div *ngIf="success" class="success-message">{{ success }}</div>
+
+      <div class="action-buttons">
+        <button *ngIf="!isEditing" (click)="toggleEdit()" class="edit-button">
+          Edit Profile
+        </button>
+        
+        <div *ngIf="isEditing" class="edit-actions">
+          <button (click)="updateProfile()" class="save-button" [disabled]="loading">
+            Save Changes
+          </button>
+          <button (click)="toggleEdit()" class="cancel-button" [disabled]="loading">
+            Cancel
+          </button>
+        </div>
+
+        <button (click)="logout()" class="logout-button">
+          Logout
+        </button>
+
+        <button (click)="deleteProfile()" class="delete-button">
+          Delete Account
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

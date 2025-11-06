@@ -8,6 +8,7 @@ router.register(r'permissions', PermissionViewSet, basename='permission')
 router.register(r'role-permissions', RolePermissionViewSet, basename='rolepermission')
 router.register(r'users', UserViewSet, basename='user')
 
+# The only thing this file should export is the router's URLs.
 urlpatterns = [
     path('', include(router.urls)),
 ]

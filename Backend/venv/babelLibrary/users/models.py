@@ -6,11 +6,11 @@ from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, Permis
 class Role(models.Model):
     """Defines different user roles within the system."""
     role_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    name = models.CharField(max_length=100, unique=True)  # e.g., 'Reader', 'Premium Reader', 'Admin', 'Author'
-    description = models.TextField(blank=True, null=True)
+    name = models.CharField(max_length=50, unique=True)
+    description = models.TextField(blank=True)
 
     class Meta:
-        db_table = 'roles'
+        ordering = ['name']  # Add this line to provide a default order
 
     def __str__(self):
         return self.name
@@ -19,7 +19,7 @@ class Role(models.Model):
 class Permission(models.Model):
     """Lists all possible actions or resources that can be controlled."""
     permission_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    name = models.CharField(max_length=100, unique=True)  # e.g., 'access_premium_chapters', 'view_admin_dashboard'
+    name = models.CharField(max_length=100, unique=True)
     description = models.TextField(blank=True, null=True)
 
     class Meta:
@@ -86,3 +86,8 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return self.username
+
+    @property
+    def id(self):
+        """Return user_id as id for compatibility with libraries expecting 'id' attribute"""
+        return self.user_id
