@@ -8,8 +8,8 @@ import { User, UpdateUserRequest, Role, RegisterData} from '../models/user';
   providedIn: 'root'
 })
 export class UserService {
-  private apiUrl = 'http://localhost:8000/api/users'; // Adjust this to match your backend URL
-  private rolesUrl = 'http://localhost:8000/api/roles';
+  private apiUrl = 'http://localhost:8000/api'; // Adjust this to match your backend URL
+
 
   constructor(private http: HttpClient) { }
 
@@ -17,7 +17,7 @@ export class UserService {
    * Get all users
    */
   getUsers(): Observable<User[]> {
-    return this.http.get<User[]>(`${this.apiUrl}/`)
+    return this.http.get<User[]>(`${this.apiUrl}/users/`)
       .pipe(catchError(this.handleError));
   }
 
@@ -25,7 +25,7 @@ export class UserService {
    * Get a single user by ID
    */
   getUser(userId: string): Observable<User> {
-    return this.http.get<User>(`${this.apiUrl}/${userId}/`)
+    return this.http.get<User>(`${this.apiUrl}/users/${userId}/`)
       .pipe(catchError(this.handleError));
   }
 
@@ -33,15 +33,16 @@ export class UserService {
    * Get all roles
    */
   getRoles(): Observable<Role[]> {
-    return this.http.get<Role[]>(`${this.rolesUrl}/`)
-      .pipe(catchError(this.handleError));
+    return this.http.get<Role[]>(`${this.apiUrl}/roles/`).pipe(
+      catchError(this.handleError)
+    );
   }
 
   /**
    * Get the Reader role (to use as default for new users)
    */
   getReaderRole(): Observable<Role | undefined> {
-    return this.http.get<Role[]>(`${this.rolesUrl}/`)
+    return this.http.get<Role[]>(`${this.apiUrl}/roles/`)
       .pipe(
         map(roles => roles.find(role => role.name === 'Reader')),
         catchError(this.handleError)
@@ -54,7 +55,7 @@ export class UserService {
   createUser(userRequest: RegisterData): Observable<User> {
     // If no role is specified, it should default to Reader on the backend
     // But we can also fetch and set it explicitly if needed
-    return this.http.post<User>(`${this.apiUrl}/`, userRequest)
+    return this.http.post<User>(`${this.apiUrl}/users/`, userRequest)
       .pipe(catchError(this.handleError));
   }
 
@@ -62,7 +63,7 @@ export class UserService {
    * Update an existing user
    */
   updateUser(userId: string, userRequest: UpdateUserRequest): Observable<User> {
-    return this.http.patch<User>(`${this.apiUrl}/${userId}/`, userRequest)
+    return this.http.patch<User>(`${this.apiUrl}/users/${userId}/`, userRequest)
       .pipe(catchError(this.handleError));
   }
 
@@ -70,7 +71,7 @@ export class UserService {
    * Delete a user
    */
   deleteUser(userId: string): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/${userId}/`)
+    return this.http.delete<void>(`${this.apiUrl}/users/${userId}/`)
       .pipe(catchError(this.handleError));
   }
 
@@ -78,7 +79,7 @@ export class UserService {
    * Deactivate a user (soft delete)
    */
   deactivateUser(userId: string): Observable<any> {
-    return this.http.post<any>(`${this.apiUrl}/${userId}/deactivate/`, {})
+    return this.http.post<any>(`${this.apiUrl}/users/${userId}/deactivate/`, {})
       .pipe(catchError(this.handleError));
   }
 
@@ -86,7 +87,7 @@ export class UserService {
    * Activate a user
    */
   activateUser(userId: string): Observable<any> {
-    return this.http.post<any>(`${this.apiUrl}/${userId}/activate/`, {})
+    return this.http.post<any>(`${this.apiUrl}/users/${userId}/activate/`, {})
       .pipe(catchError(this.handleError));
   }
 
@@ -94,7 +95,7 @@ export class UserService {
    * Set/change user password
    */
   setPassword(userId: string, password: string): Observable<any> {
-    return this.http.post<any>(`${this.apiUrl}/${userId}/set_password/`, { password })
+    return this.http.post<any>(`${this.apiUrl}/users/${userId}/set_password/`, { password })
       .pipe(catchError(this.handleError));
   }
 

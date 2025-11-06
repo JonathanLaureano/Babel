@@ -33,10 +33,6 @@ export class AuthService {
     );
   }
 
-  register(data: RegisterData): Observable<User> {
-    return this.http.post<User>(`${this.apiUrl}/users/`, data);
-  }
-
   logout(): void {
     sessionStorage.removeItem('access_token');
     sessionStorage.removeItem('refresh_token');

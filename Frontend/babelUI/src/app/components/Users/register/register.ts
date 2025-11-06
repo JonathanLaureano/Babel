@@ -1,10 +1,10 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../services/auth.service';
 import { UserService } from '../../../services/user.service';
-import { RegisterData, Role } from '../../../models/user';
+import { RegisterData } from '../../../models/user';
 
 @Component({
   selector: 'app-register',
@@ -12,20 +12,37 @@ import { RegisterData, Role } from '../../../models/user';
   templateUrl: './register.html',
   styleUrl: './register.css'
 })
-export class Register {
-  registerData = {
+export class Register implements OnInit {
+  registerData: RegisterData = {
     username: '',
     email: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    role: ''  // Will be set to 'Reader' by default on initialization
   };
   error: string | null = null;
   loading = false;
 
   constructor(
     private authService: AuthService,
+    private userService: UserService, // Injected UserService
     private router: Router
   ) {}
+
+  ngOnInit(): void {
+    // Set default role to 'Reader' on component initialization
+    this.userService.getReaderRole().subscribe({
+      next: (readerRole) => {
+        if (readerRole) {
+          this.registerData.role = readerRole.role_id;
+        }
+      },
+      error: (err) => {
+        console.error('Could not fetch default reader role', err);
+        this.error = 'Could not initialize registration form. Please try again later.';
+      }
+    });
+  }
 
   onSubmit(): void {
     if (!this.registerData.username || !this.registerData.email || !this.registerData.password) {
@@ -46,20 +63,20 @@ export class Register {
     this.loading = true;
     this.error = null;
 
-    const { confirmPassword, ...data } = this.registerData;
-
-    this.authService.register(data).subscribe({
+    // Use userService.createUser for registration
+    this.userService.createUser(this.registerData).subscribe({
       next: () => {
-        // Auto-login after registration
+        // Auto-login after successful registration
         this.authService.login({
-          username: data.username,
-          password: data.password
+          username: this.registerData.username,
+          password: this.registerData.password
         }).subscribe({
           next: () => {
             this.router.navigate(['/']);
           },
           error: (err) => {
             console.error('Auto-login error:', err);
+            // If auto-login fails, redirect to login page for manual login
             this.router.navigate(['/login']);
           }
         });

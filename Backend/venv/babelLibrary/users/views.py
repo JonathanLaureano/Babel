@@ -50,15 +50,17 @@ class UserViewSet(viewsets.ModelViewSet):
     """
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [permissions.IsAuthenticated] # Changed for security
-    lookup_field = 'user_id'  # Use user_id instead of pk in URLs
+    permission_classes = [permissions.IsAuthenticated] # Default to authenticated
+    lookup_field = 'user_id'
 
     def get_permissions(self):
         """
         Instantiates and returns the list of permissions that this view requires.
+        For 'create' (registration), allow any user.
+        For other actions, use the default (IsAuthenticated).
         """
         if self.action == 'create':
-            self.permission_classes = [permissions.AllowAny]
+            return [permissions.AllowAny()]
         return super().get_permissions()
 
     def create(self, request, *args, **kwargs):
@@ -157,8 +159,16 @@ class RoleViewSet(viewsets.ModelViewSet):
     """
     queryset = Role.objects.all()
     serializer_class = RoleSerializer
+    pagination_class = None
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
-    lookup_field = 'role_id'  # Use role_id instead of pk in URLs
+    lookup_field = 'role_id'
+
+    def list(self, request, *args, **kwargs):
+        """
+        Ensure the default 'Reader' role exists before listing roles.
+        """
+        Role.objects.get_or_create(name='Reader', defaults={'description': 'Default role with read-only access.'})
+        return super().list(request, *args, **kwargs)
 
     @action(detail=True, methods=['get'])
     def users(self, request, role_id=None):
