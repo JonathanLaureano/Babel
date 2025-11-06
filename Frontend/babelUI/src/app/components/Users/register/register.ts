@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../services/auth.service';
 import { UserService } from '../../../services/user.service';
-import { RegisterData } from '../../../models/user';
+import { RegisterData, CreateUserRequest } from '../../../models/user';
 
 @Component({
   selector: 'app-register',
@@ -63,8 +63,16 @@ export class Register implements OnInit {
     this.loading = true;
     this.error = null;
 
+    // Create API request object without confirmPassword
+    const createUserRequest: CreateUserRequest = {
+      username: this.registerData.username,
+      email: this.registerData.email,
+      password: this.registerData.password,
+      role: this.registerData.role
+    };
+
     // Use userService.createUser for registration
-    this.userService.createUser(this.registerData).subscribe({
+    this.userService.createUser(createUserRequest).subscribe({
       next: () => {
         // Auto-login after successful registration
         this.authService.login({

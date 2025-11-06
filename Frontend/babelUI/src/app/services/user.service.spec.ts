@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { UserService } from './user.service';
-import { User, UpdateUserRequest, RegisterData, Role } from '../models/user';
+import { User, UpdateUserRequest, CreateUserRequest, Role } from '../models/user';
 
 describe('UserService', () => {
   let service: UserService;
@@ -105,7 +105,7 @@ describe('UserService', () => {
   });
 
   it('should create a user', () => {
-    const createRequest: RegisterData = {
+    const createRequest: CreateUserRequest = {
       username: 'newuser',
       email: 'new@example.com',
       password: 'password123'
