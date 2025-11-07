@@ -36,7 +36,7 @@ class SeriesViewSet(viewsets.ModelViewSet):
     """
     queryset = Series.objects.all().prefetch_related('genres', 'chapters').annotate(
         avg_rating=Avg('ratings__rating'),
-        total_views=Count('views__visitor_id', distinct=True) + Count('chapters__chapter_views__visitor_id', distinct=True)
+        total_views=Count('series_views__visitor_id', distinct=True) + Count('chapters__chapter_views__visitor_id', distinct=True)
     )
     pagination_class = None
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
