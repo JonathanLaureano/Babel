@@ -1,0 +1,140 @@
+<div class="admin-container">
+  <div class="admin-header">
+    <h1>Staff Panel</h1>
+    <button *ngIf="activeTab === 'series'" class="add-series-btn" (click)="addSeries()">
+      Add Series
+    </button>
+  </div>
+
+  <div class="tabs" role="tablist">
+    <button 
+      class="tab-btn" 
+      role="tab"
+      [class.active]="activeTab === 'series'"
+      [attr.aria-selected]="activeTab === 'series'"
+      aria-controls="series-panel"
+      (click)="setActiveTab('series')">
+      Series
+    </button>
+    <button 
+      class="tab-btn" 
+      role="tab"
+      [class.active]="activeTab === 'chapters'"
+      [attr.aria-selected]="activeTab === 'chapters'"
+      aria-controls="chapters-panel"
+      (click)="setActiveTab('chapters')">
+      Chapters
+    </button>
+    <button 
+      class="tab-btn" 
+      role="tab"
+      [class.active]="activeTab === 'users'"
+      [attr.aria-selected]="activeTab === 'users'"
+      aria-controls="users-panel"
+      (click)="setActiveTab('users')">
+      Users
+    </button>
+  </div>
+
+  <div class="table-container">
+    <div *ngIf="isLoading" class="loading">Loading...</div>
+    <div *ngIf="errorMessage" class="error">{{ errorMessage }}</div>
+
+    <!-- Series Tab -->
+    <div *ngIf="activeTab === 'series' && !isLoading" class="table-content" role="tabpanel" id="series-panel" aria-labelledby="series-tab">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th class="name-col">Series Name</th>
+            <th class="actions-header">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of series">
+            <td class="name-col">{{ item.title }}</td>
+            <td class="actions-col">
+              <div class="action-buttons">
+                <button class="btn btn-edit" (click)="editSeries(item.series_id)" [attr.aria-label]="'Edit series: ' + item.title">
+                  Edit Series
+                </button>
+                <button class="btn btn-add" (click)="addChapter(item.series_id)" [attr.aria-label]="'Add chapter to series: ' + item.title">
+                  Add Chapter
+                </button>
+                <button class="btn btn-delete" (click)="deleteSeries(item.series_id)" [attr.aria-label]="'Delete series: ' + item.title">
+                  Delete Series
+                </button>
+              </div>
+            </td>
+          </tr>
+          <tr *ngIf="series.length === 0">
+            <td colspan="2" class="no-data">No series found</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Chapters Tab -->
+    <div *ngIf="activeTab === 'chapters' && !isLoading" class="table-content" role="tabpanel" id="chapters-panel" aria-labelledby="chapters-tab">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th class="name-col">Chapter</th>
+            <th class="name-col">Series</th>
+            <th class="actions-header">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of chapters">
+            <td class="name-col">
+              {{ item.title }}: Chapter {{ item.chapter_number }}
+            </td>
+            <td>{{ item.series_title }}</td>
+            <td class="actions-col">
+              <div class="action-buttons">
+                <button class="btn btn-edit" (click)="editChapter(item.chapter_id)" [attr.aria-label]="'Edit chapter: ' + item.title + ' Chapter ' + item.chapter_number">
+                  Edit Chapter
+                </button>
+                <button class="btn btn-delete" (click)="deleteChapter(item.chapter_id)" [attr.aria-label]="'Delete chapter: ' + item.title + ' Chapter ' + item.chapter_number">
+                  Delete Chapter
+                </button>
+              </div>
+            </td>
+          </tr>
+          <tr *ngIf="chapters.length === 0">
+            <td colspan="3" class="no-data">No chapters found</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Users Tab -->
+    <div *ngIf="activeTab === 'users' && !isLoading" class="table-content" role="tabpanel" id="users-panel" aria-labelledby="users-tab">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th class="name-col">Username</th>
+            <th class="actions-header">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of users">
+            <td class="name-col">{{ item.username }}</td>
+            <td class="actions-col">
+              <div class="action-buttons">
+                <button class="btn btn-view" (click)="viewUserInfo(item.user_id)" [attr.aria-label]="'View information for user: ' + item.username">
+                  View Information
+                </button>
+                <button class="btn btn-delete" (click)="deleteUser(item.user_id)" [attr.aria-label]="'Delete user: ' + item.username">
+                  Delete User
+                </button>
+              </div>
+            </td>
+          </tr>
+          <tr *ngIf="users.length === 0">
+            <td colspan="2" class="no-data">No users found</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

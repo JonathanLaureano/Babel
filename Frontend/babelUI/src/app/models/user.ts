@@ -11,6 +11,7 @@ export interface User {
   role: string; // Role ID
   role_name?: string; // Read-only, populated by backend
   is_active: boolean;
+  is_staff: boolean;
   created_at: string;
   updated_at: string;
 }

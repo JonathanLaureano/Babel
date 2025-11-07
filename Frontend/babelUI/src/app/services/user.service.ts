@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Observable, throwError } from 'rxjs';
+import { Observable, throwError} from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { User, UpdateUserRequest, Role, RegisterData, AuthResponse} from '../models/user';
 
@@ -14,7 +14,7 @@ export class UserService {
   constructor(private http: HttpClient) { }
 
   /**
-   * Get all users
+   * Get all users (only available to staff)
    */
   getUsers(): Observable<User[]> {
     return this.http.get<User[]>(`${this.apiUrl}/users/`)

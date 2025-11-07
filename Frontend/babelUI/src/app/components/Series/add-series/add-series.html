@@ -1,0 +1,39 @@
+<div class="form-container">
+  <a routerLink="/staff" class="back-link">← Back to Admin Panel</a>
+  <h2>Add New Series</h2>
+  <form (ngSubmit)="onSubmit()" #seriesForm="ngForm">
+    <div class="form-group">
+      <label for="title">Title</label>
+      <input type="text" id="title" name="title" [(ngModel)]="series.title" required>
+    </div>
+    <div class="form-group">
+      <label for="description">Description</label>
+      <textarea id="description" name="description" [(ngModel)]="series.description" rows="4"></textarea>
+    </div>
+    <div class="form-group">
+      <label for="cover_image_url">Cover Image URL</label>
+      <input type="url" id="cover_image_url" name="cover_image_url" [(ngModel)]="series.cover_image_url">
+    </div>
+    <div class="form-group">
+      <label for="status">Status</label>
+      <select id="status" name="status" [(ngModel)]="series.status">
+        <option value="Ongoing">Ongoing</option>
+        <option value="Completed">Completed</option>
+        <option value="Hiatus">Hiatus</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label for="genres">Genres</label>
+      <span id="genres-instructions" class="form-instructions">
+        Hold Ctrl (Windows) or Cmd (Mac) to select multiple genres.
+      </span>
+      <select id="genres" name="genres" [(ngModel)]="series.genre_ids" multiple aria-label="Select genres" aria-describedby="genres-instructions">
+        <option *ngFor="let genre of genres" [value]="genre.genre_id">{{ genre.name }}</option>
+      </select>
+    </div>
+    <div *ngIf="error" class="error-message">{{ error }}</div>
+    <button type="submit" [disabled]="!seriesForm.form.valid || loading">
+      {{ loading ? 'Creating...' : 'Create Series' }}
+    </button>
+  </form>
+</div>

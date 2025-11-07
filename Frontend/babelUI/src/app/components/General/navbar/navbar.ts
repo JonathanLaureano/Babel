@@ -25,6 +25,10 @@ export class Navbar implements OnInit {
     });
   }
 
+  isStaff(): boolean {
+    return this.currentUser?.is_staff === true;
+  }
+
   logout(): void {
     this.authService.logout();
     this.router.navigate(['/login']);

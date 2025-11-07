@@ -16,6 +16,11 @@
               Discord
             </a>
           </li>
+          <li *ngIf="isStaff()">
+            <a routerLink="/staff" routerLinkActive="active">
+              Staff
+            </a>
+          </li>
         </ul>
       </nav>
     </div>

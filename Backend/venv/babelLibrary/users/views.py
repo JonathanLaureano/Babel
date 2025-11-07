@@ -50,15 +50,19 @@ class UserViewSet(viewsets.ModelViewSet):
     """
     queryset = User.objects.all()
     serializer_class = UserSerializer
+    pagination_class = None
     permission_classes = [permissions.IsAuthenticated] # Default to authenticated
     lookup_field = 'user_id'
 
     def get_permissions(self):
         """
         Instantiates and returns the list of permissions that this view requires.
-        For 'create' (registration), allow any user.
-        For other actions, use the default (IsAuthenticated).
+        - 'list' action (GET all users) is restricted to staff members.
+        - 'create' action (registration) is open to any user.
+        - Other actions default to requiring authentication.
         """
+        if self.action == 'list':
+            return [permissions.IsAdminUser()]
         if self.action == 'create':
             return [permissions.AllowAny()]
         return super().get_permissions()
