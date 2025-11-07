@@ -1,5 +1,7 @@
 import uuid
 from django.db import models
+from django.core.validators import MinValueValidator, MaxValueValidator
+from django.conf import settings
 
 
 class Genre(models.Model):
@@ -24,6 +26,7 @@ class Series(models.Model):
 
     series_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     title = models.CharField(max_length=255)
+    author = models.CharField(max_length=255, blank=True, null=True)
     description = models.TextField(blank=True, null=True)
     cover_image_url = models.URLField(max_length=2048, blank=True, null=True)
     status = models.CharField(max_length=50, choices=STATUS_CHOICES, default='Ongoing')
@@ -37,6 +40,32 @@ class Series(models.Model):
 
     def __str__(self):
         return self.title
+    
+    @property
+    def average_rating(self):
+        """Calculate the average rating from all user ratings."""
+        ratings = self.ratings.all()
+        if not ratings.exists():
+            return 0
+        total = sum(r.rating for r in ratings)
+        return round(total / ratings.count(), 2)
+    
+    @property
+    def total_view_count(self):
+        """Get total unique views for this series including chapter views."""
+        # Direct series views
+        series_views = self.series_views.count()
+        # Unique views from chapters
+        chapter_views = ChapterView.objects.filter(
+            chapter__series=self
+        ).values('visitor_id').distinct().count()
+        # Combine and remove duplicates
+        all_visitor_ids = set()
+        all_visitor_ids.update(self.series_views.values_list('visitor_id', flat=True))
+        all_visitor_ids.update(
+            ChapterView.objects.filter(chapter__series=self).values_list('visitor_id', flat=True)
+        )
+        return len(all_visitor_ids)
 
 
 class SeriesGenre(models.Model):
@@ -72,3 +101,63 @@ class Chapter(models.Model):
 
     def __str__(self):
         return f"{self.series.title} - Chapter {self.chapter_number}: {self.title}"
+    
+    @property
+    def view_count(self):
+        """Get total unique views for this chapter."""
+        return self.chapter_views.count()
+
+
+class SeriesRating(models.Model):
+    """Stores user ratings for series (1-5 stars)."""
+    rating_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    series = models.ForeignKey(Series, on_delete=models.CASCADE, related_name='ratings')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='series_ratings')
+    rating = models.IntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(5)]
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'seriesrating'
+        unique_together = ('series', 'user')
+
+    def __str__(self):
+        return f"{self.user.username} rated {self.series.title}: {self.rating}/5"
+
+
+class SeriesView(models.Model):
+    """Tracks unique views for series."""
+    view_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    series = models.ForeignKey(Series, on_delete=models.CASCADE, related_name='series_views')
+    visitor_id = models.CharField(max_length=255, help_text="Unique identifier for visitor (user_id or session/IP)")
+    viewed_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'seriesview'
+        unique_together = ('series', 'visitor_id')
+        indexes = [
+            models.Index(fields=['series', 'visitor_id']),
+        ]
+
+    def __str__(self):
+        return f"View of {self.series.title} by {self.visitor_id}"
+
+
+class ChapterView(models.Model):
+    """Tracks unique views for chapters."""
+    view_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    chapter = models.ForeignKey(Chapter, on_delete=models.CASCADE, related_name='chapter_views')
+    visitor_id = models.CharField(max_length=255, help_text="Unique identifier for visitor (user_id or session/IP)")
+    viewed_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'chapterview'
+        unique_together = ('chapter', 'visitor_id')
+        indexes = [
+            models.Index(fields=['chapter', 'visitor_id']),
+        ]
+
+    def __str__(self):
+        return f"View of {self.chapter.title} by {self.visitor_id}"
