@@ -18,12 +18,6 @@ export class UserService {
    * Get all users (only available to staff)
    */
   getUsers(): Observable<User[]> {
-    const currentUser = this.authService.getCurrentUser();
-    if (!currentUser?.is_staff) {
-      // Return an empty array or an observable with an error if the user is not staff
-      console.warn('getUsers() called by a non-staff user. Aborting request.');
-      return of([]); // Return an empty array to prevent unauthorized calls
-    }
     return this.http.get<User[]>(`${this.apiUrl}/users/`)
       .pipe(catchError(this.handleError));
   }

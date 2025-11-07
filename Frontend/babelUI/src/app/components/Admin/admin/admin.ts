@@ -4,7 +4,7 @@ import { Router } from '@angular/router';
 import { LibraryService } from '../../../services/library.service';
 import { UserService } from '../../../services/user.service';
 import { Series } from '../../../models/series';
-import { Chapter, ChapterListItem } from '../../../models/chapter';
+import { ChapterListItem } from '../../../models/chapter';
 import { User } from '../../../models/user';
 import { forkJoin } from 'rxjs';
 
