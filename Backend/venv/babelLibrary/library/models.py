@@ -58,7 +58,7 @@ class Series(models.Model):
         ).values_list('visitor_id', flat=True)
         # Use union to combine and get distinct visitor_ids at the database level
         all_visitor_ids = series_visitor_ids.union(chapter_visitor_ids)
-        return all_visitor_ids.distinct().count()
+        return all_visitor_ids.count()
 
 
 class SeriesGenre(models.Model):
