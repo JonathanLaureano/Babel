@@ -23,9 +23,9 @@ export const routes: Routes = [
   { path: 'login', component: Login },
   { path: 'register', component: Register },
   { path: 'profile', component: Profile },
-  { path: 'staff', component: Admin, canActivate: [AuthGuard] },
-  { path: 'staff/add-series', component: AddSeries, canActivate: [AuthGuard] },
-  { path: 'staff/edit-series/:id', component: EditSeries, canActivate: [AuthGuard] },
-  { path: 'staff/add-chapter/:seriesId', component: AddChapter, canActivate: [AuthGuard] },
-  { path: 'staff/edit-chapter/:id', component: EditChapter, canActivate: [AuthGuard] }
+  { path: 'staff', component: Admin, canActivate: [AuthGuard], data: { requiresStaff: true } },
+  { path: 'staff/add-series', component: AddSeries, canActivate: [AuthGuard], data: { requiresStaff: true } },
+  { path: 'staff/edit-series/:id', component: EditSeries, canActivate: [AuthGuard], data: { requiresStaff: true } },
+  { path: 'staff/add-chapter/:seriesId', component: AddChapter, canActivate: [AuthGuard], data: { requiresStaff: true } },
+  { path: 'staff/edit-chapter/:id', component: EditChapter, canActivate: [AuthGuard], data: { requiresStaff: true } }
 ];
