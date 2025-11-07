@@ -10,6 +10,18 @@ from .serializers import (
 )
 
 
+class ViewTrackingMixin:
+    def _get_client_ip(self, request):
+        """Get client IP address from request."""
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            # Get the first IP (original client)
+            ip = x_forwarded_for.split(',')[0].strip()
+        else:
+            ip = request.META.get('REMOTE_ADDR')
+        return ip
+
+
 class GenreViewSet(viewsets.ModelViewSet):
     """
     ViewSet for viewing and editing Genre instances.
@@ -30,7 +42,7 @@ class GenreViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
-class SeriesViewSet(viewsets.ModelViewSet):
+class SeriesViewSet(ViewTrackingMixin, viewsets.ModelViewSet):
     """
     ViewSet for viewing and editing Series instances.
     """
@@ -166,7 +178,7 @@ class SeriesGenreViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
 
-class ChapterViewSet(viewsets.ModelViewSet):
+class ChapterViewSet(ViewTrackingMixin, viewsets.ModelViewSet):
     """
     ViewSet for viewing and editing Chapter instances.
     """
@@ -247,14 +259,3 @@ class ChapterViewSet(viewsets.ModelViewSet):
             'message': 'View tracked' if created else 'View already recorded',
             'view_count': chapter.view_count
         }, status=status.HTTP_200_OK)
-
-class ViewTrackingMixin:
-    def _get_client_ip(self, request):
-        """Get client IP address from request."""
-        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-        if x_forwarded_for:
-            # Get the first IP (original client)
-            ip = x_forwarded_for.split(',')[0].strip()
-        else:
-            ip = request.META.get('REMOTE_ADDR')
-        return ip
