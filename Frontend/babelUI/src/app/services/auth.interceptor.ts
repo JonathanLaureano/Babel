@@ -1,6 +1,5 @@
 import { HttpInterceptorFn, HttpErrorResponse } from '@angular/common/http';
 import { catchError, throwError } from 'rxjs';
-import { AuthService } from './auth.service';
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const token = sessionStorage.getItem('access_token');
