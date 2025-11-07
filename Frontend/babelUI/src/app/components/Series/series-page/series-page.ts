@@ -71,7 +71,9 @@ export class SeriesPage implements OnInit {
       },
       error: (err: any) => {
         console.error('Error loading series:', err);
-          }
+        this.error = 'Failed to load series.';
+        this.loading = false;
+      }
     });
   }
 
