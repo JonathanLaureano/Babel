@@ -17,6 +17,7 @@ export class EditSeries implements OnInit {
   series: Series | null = null;
   seriesUpdateData = {
     title: '',
+    author: '',
     description: '',
     cover_image_url: '',
     status: 'Ongoing',
@@ -57,6 +58,7 @@ export class EditSeries implements OnInit {
         this.series = series;
         this.seriesUpdateData = {
           title: series.title,
+          author: series.author || '',
           description: series.description || '',
           cover_image_url: series.cover_image_url || '',
           status: series.status,

@@ -24,12 +24,24 @@
       
       <div class="series-info">
         <h1>{{ series.title }}</h1>
+        <p class="author" *ngIf="series.author">
+          <strong>By:</strong> {{ series.author }}
+        </p>
         
         <div class="series-meta">
           <span class="status" [class]="series.status.toLowerCase()">
             {{ series.status }}
           </span>
           <span class="chapter-count">{{ chapters.length || 0 }} Chapters</span>
+          <span class="view-count">👁 {{ series.total_view_count || 0 }} views</span>
+        </div>
+
+        <!-- Rating Display -->
+        <div class="rating-section">
+          <app-star-rating 
+            [rating]="series.average_rating" 
+            [showValue]="true"
+          ></app-star-rating>
         </div>
 
         <div class="genres" *ngIf="series.genres && series.genres.length > 0">
@@ -45,6 +57,17 @@
         <div class="series-dates">
           <p><strong>Created:</strong> {{ series.created_at | date:'mediumDate' }}</p>
           <p><strong>Last Updated:</strong> {{ series.updated_at | date:'mediumDate' }}</p>
+        </div>
+
+        <!-- Rating Submission (only for logged-in users) -->
+        <div *ngIf="isLoggedIn" class="rating-submission">
+          <app-rating-submit 
+            [seriesId]="series.series_id"
+            (ratingSubmitted)="onRatingSubmitted()"
+          ></app-rating-submit>
+        </div>
+        <div *ngIf="!isLoggedIn" class="login-prompt">
+          <p>Please <a routerLink="/login">log in</a> to rate this series.</p>
         </div>
       </div>
     </div>

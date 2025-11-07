@@ -15,6 +15,7 @@ import { Genre } from '../../../models/genre';
 export class AddSeries implements OnInit {
   series = {
     title: '',
+    author: '',
     description: '',
     cover_image_url: '',
     status: 'Ongoing',

@@ -49,8 +49,18 @@
 }
 
 .series-info h1 {
-  margin: 0 0 1rem 0;
+  margin: 0 0 0.5rem 0;
   font-size: 2rem;
+  color: #333;
+}
+
+.author {
+  margin: 0 0 1rem 0;
+  font-size: 1rem;
+  color: #666;
+}
+
+.author strong {
   color: #333;
 }
 
@@ -84,10 +94,17 @@
   color: #f57c00;
 }
 
-.chapter-count {
+.chapter-count,
+.view-count {
   font-size: 0.875rem;
   color: #666;
   font-weight: 500;
+}
+
+.view-count {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
 }
 
 .genres {
@@ -121,6 +138,37 @@
   margin: 0.5rem 0;
   font-size: 0.875rem;
   color: #666;
+}
+
+.rating-section {
+  margin: 1.5rem 0;
+}
+
+.rating-submission {
+  margin-top: 2rem;
+}
+
+.login-prompt {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.login-prompt p {
+  margin: 0;
+  color: #666;
+}
+
+.login-prompt a {
+  color: #667eea;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.login-prompt a:hover {
+  text-decoration: underline;
 }
 
 .chapters-section {
