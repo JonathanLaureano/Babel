@@ -1,7 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
 import { Series } from '../models/series';
 import { Chapter, ChapterListItem } from '../models/chapter';
 import { Genre } from '../models/genre';
@@ -71,5 +70,19 @@ export class LibraryService {
   // Genre endpoints
   getGenres(): Observable<Genre[]> {
     return this.http.get<Genre[]>(`${this.apiUrl}/genres/`);
+  }
+
+  // Rating endpoint
+  rateSeriesRating(seriesId: string, rating: number): Observable<any> {
+    return this.http.post(`${this.apiUrl}/series/${seriesId}/rate/`, { rating });
+  }
+
+  // View tracking endpoints
+  trackSeriesView(seriesId: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/series/${seriesId}/track_view/`, {});
+  }
+
+  trackChapterView(chapterId: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/chapters/${chapterId}/track_view/`, {});
   }
 }

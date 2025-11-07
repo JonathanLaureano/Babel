@@ -52,6 +52,9 @@ export class ChapterPage implements OnInit {
           next: ({ chapter, allChapters }) => {
             this.chapter = chapter;
             
+            // Track the chapter view
+            this.trackView(chapterId);
+            
             const sortedChapters = allChapters.sort((a: ChapterListItem, b: ChapterListItem) => a.chapter_number - b.chapter_number);
             const currentIndex = sortedChapters.findIndex(c => c.chapter_id === chapter.chapter_id);
 
@@ -77,5 +80,21 @@ export class ChapterPage implements OnInit {
 
   navigateToChapter(seriesId: string, chapterId: string): void {
     this.router.navigate(['/series', seriesId, 'chapter', chapterId]);
+  }
+
+  trackView(chapterId: string): void {
+    this.libraryService.trackChapterView(chapterId).subscribe({
+      next: (response) => {
+        console.log('Chapter view tracked:', response);
+        // Optionally update the view count in the UI
+        if (this.chapter && response.view_count !== undefined) {
+          this.chapter.view_count = response.view_count;
+        }
+      },
+      error: (err) => {
+        console.error('Error tracking chapter view:', err);
+        // Don't show error to user, view tracking is not critical
+      }
+    });
   }
 }

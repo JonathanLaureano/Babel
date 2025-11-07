@@ -7,6 +7,7 @@ export interface Chapter {
   content: string;
   word_count?: number;
   publication_date?: string;
+  view_count: number;
   created_at: string;
   updated_at: string;
 }
@@ -19,6 +20,7 @@ export interface ChapterListItem {
   title: string;
   word_count?: number;
   publication_date?: string;
+  view_count: number;
   created_at: string;
   updated_at: string;
 }

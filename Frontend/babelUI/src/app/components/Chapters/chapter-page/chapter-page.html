@@ -7,7 +7,10 @@
 <div *ngIf="!loading && !error && chapter" class="chapter-page-container">
   <div class="chapter-header">
     <h1>{{ chapter.title }}</h1>
-    <p class="chapter-meta">Chapter {{ chapter.chapter_number }} of {{ chapter.series_title }}</p>
+    <div class="chapter-info-bar">
+      <p class="chapter-meta">Chapter {{ chapter.chapter_number }} of {{ chapter.series_title }}</p>
+      <p class="view-count">👁 {{ chapter.view_count || 0 }} views</p>
+    </div>
   </div>
 
   <div class="chapter-content">

@@ -1,0 +1,73 @@
+.rating-submit {
+  margin-top: 20px;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.rating-form h3 {
+  margin: 0 0 15px 0;
+  font-size: 1.1rem;
+  color: #333;
+}
+
+.star-selector {
+  display: flex;
+  gap: 5px;
+  margin-bottom: 15px;
+}
+
+.star-button {
+  background: none;
+  border: none;
+  font-size: 2rem;
+  cursor: pointer;
+  padding: 0;
+  color: #e0e0e0;
+  transition: color 0.2s ease;
+}
+
+.star-button:hover,
+.star-button.selected {
+  color: #ffc107;
+}
+
+.star-button:focus {
+  outline: 2px solid #ffc107;
+  outline-offset: 2px;
+}
+
+.submit-button {
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background 0.2s ease;
+}
+
+.submit-button:hover:not(:disabled) {
+  background: #0056b3;
+}
+
+.submit-button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.error-message {
+  color: #dc3545;
+  margin-top: 10px;
+  font-size: 0.9rem;
+}
+
+.success-message {
+  color: #28a745;
+  font-weight: 500;
+}
+
+.loading {
+  color: #666;
+}
