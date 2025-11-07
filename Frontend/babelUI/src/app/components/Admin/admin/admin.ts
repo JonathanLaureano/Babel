@@ -118,15 +118,15 @@ export class Admin implements OnInit {
 
   // Series actions
   addSeries(): void {
-    this.router.navigate(['/admin/add-series']);
+    this.router.navigate(['/staff/add-series']);
   }
 
   editSeries(seriesId: string): void {
-    this.router.navigate(['/admin/edit-series', seriesId]);
+    this.router.navigate(['/staff/edit-series', seriesId]);
   }
 
   addChapter(seriesId: string): void {
-    this.router.navigate(['/admin/add-chapter', seriesId]);
+    this.router.navigate(['/staff/add-chapter', seriesId]);
   }
 
   deleteSeries(seriesId: string): void {
@@ -143,7 +143,7 @@ export class Admin implements OnInit {
 
   // Chapter actions
   editChapter(chapterId: string): void {
-    this.router.navigate(['/admin/edit-chapter', chapterId]);
+    this.router.navigate(['/staff/edit-chapter', chapterId]);
   }
 
   deleteChapter(chapterId: string): void {

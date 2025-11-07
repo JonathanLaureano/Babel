@@ -1,14 +1,14 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { LibraryService } from '../../../services/library.service';
 import { Chapter } from '../../../models/chapter';
 
 @Component({
   selector: 'app-edit-chapter',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterModule],
   templateUrl: './edit-chapter.html',
   styleUrls: ['./edit-chapter.css']
 })

@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { LibraryService } from '../../../services/library.service';
 import { Genre } from '../../../models/genre';
 import { Series } from '../../../models/series';
@@ -9,7 +9,7 @@ import { Series } from '../../../models/series';
 @Component({
   selector: 'app-edit-series',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterModule],
   templateUrl: './edit-series.html',
   styleUrls: ['./edit-series.css']
 })

@@ -12,6 +12,7 @@ import { AddSeries } from './components/Series/add-series/add-series';
 import { EditSeries } from './components/Series/edit-series/edit-series';
 import { AddChapter } from './components/Series/add-chapter/add-chapter';
 import { EditChapter } from './components/Series/edit-chapter/edit-chapter';
+import { AuthGuard } from './services/auth.guard';
 
 export const routes: Routes = [
   { path: '', component: Homepage },
@@ -22,9 +23,9 @@ export const routes: Routes = [
   { path: 'login', component: Login },
   { path: 'register', component: Register },
   { path: 'profile', component: Profile },
-  { path: 'staff', component: Admin },
-  { path: 'admin/add-series', component: AddSeries },
-  { path: 'admin/edit-series/:id', component: EditSeries },
-  { path: 'admin/add-chapter/:seriesId', component: AddChapter },
-  { path: 'admin/edit-chapter/:id', component: EditChapter }
+  { path: 'staff', component: Admin, canActivate: [AuthGuard] },
+  { path: 'staff/add-series', component: AddSeries, canActivate: [AuthGuard] },
+  { path: 'staff/edit-series/:id', component: EditSeries, canActivate: [AuthGuard] },
+  { path: 'staff/add-chapter/:seriesId', component: AddChapter, canActivate: [AuthGuard] },
+  { path: 'staff/edit-chapter/:id', component: EditChapter, canActivate: [AuthGuard] }
 ];
