@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Genre, Series, SeriesGenre, Chapter, SeriesRating, SeriesView, ChapterView
+from .models import Genre, Series, SeriesGenre, Chapter, SeriesRating
 
 
 class GenreSerializer(serializers.ModelSerializer):
@@ -21,7 +21,7 @@ class SeriesGenreSerializer(serializers.ModelSerializer):
 
 class ChapterSerializer(serializers.ModelSerializer):
     series_title = serializers.CharField(source='series.title', read_only=True)
-    view_count = serializers.IntegerField(read_only=True)
+    view_count = serializers.IntegerField(source='view_count_annotation', read_only=True)
 
     class Meta:
         model = Chapter
@@ -36,7 +36,7 @@ class ChapterSerializer(serializers.ModelSerializer):
 class ChapterListSerializer(serializers.ModelSerializer):
     """Serializer for listing chapters without full content"""
     series_title = serializers.CharField(source='series.title', read_only=True)
-    view_count = serializers.IntegerField(read_only=True)
+    view_count = serializers.IntegerField(source='view_count_annotation', read_only=True)
 
     class Meta:
         model = Chapter
@@ -58,8 +58,8 @@ class SeriesSerializer(serializers.ModelSerializer):
         required=False
     )
     chapters_count = serializers.SerializerMethodField()
-    average_rating = serializers.FloatField(read_only=True)
-    total_view_count = serializers.IntegerField(read_only=True)
+    average_rating = serializers.FloatField(source='avg_rating', read_only=True)
+    total_view_count = serializers.IntegerField(source='total_views', read_only=True)
 
     class Meta:
         model = Series

@@ -229,9 +229,9 @@ All view tracking and rating operations include error handling:
 ## Responsive Design
 
 All components are responsive and work well on:
-- Desktop (>768px)
-- Tablet (768px)
-- Mobile (<480px)
+- Desktop (≥992px)
+- Tablet (768px - 991px) or (≥768px and <992px)
+- Mobile (<768px)
 
 The series page adjusts its grid layout for smaller screens, and all text remains readable across devices.
 

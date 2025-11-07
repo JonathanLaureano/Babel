@@ -1,5 +1,6 @@
 import uuid
 from django.db import models
+from django.db.models import Avg
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.conf import settings
 
@@ -44,28 +45,20 @@ class Series(models.Model):
     @property
     def average_rating(self):
         """Calculate the average rating from all user ratings."""
-        ratings = self.ratings.all()
-        if not ratings.exists():
-            return 0
-        total = sum(r.rating for r in ratings)
-        return round(total / ratings.count(), 2)
+        result = self.ratings.aggregate(avg=Avg('rating'))
+        return round(result['avg'], 2) if result['avg'] is not None else 0
     
     @property
     def total_view_count(self):
         """Get total unique views for this series including chapter views."""
-        # Direct series views
-        series_views = self.series_views.count()
-        # Unique views from chapters
-        chapter_views = ChapterView.objects.filter(
+        # Get unique visitor IDs from both series and chapter views using a single query
+        series_visitor_ids = self.series_views.values_list('visitor_id', flat=True)
+        chapter_visitor_ids = ChapterView.objects.filter(
             chapter__series=self
-        ).values('visitor_id').distinct().count()
-        # Combine and remove duplicates
-        all_visitor_ids = set()
-        all_visitor_ids.update(self.series_views.values_list('visitor_id', flat=True))
-        all_visitor_ids.update(
-            ChapterView.objects.filter(chapter__series=self).values_list('visitor_id', flat=True)
-        )
-        return len(all_visitor_ids)
+        ).values_list('visitor_id', flat=True)
+        # Use union to combine and get distinct visitor_ids at the database level
+        all_visitor_ids = series_visitor_ids.union(chapter_visitor_ids)
+        return all_visitor_ids.distinct().count()
 
 
 class SeriesGenre(models.Model):

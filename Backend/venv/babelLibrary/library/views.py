@@ -2,6 +2,7 @@ from rest_framework import viewsets, permissions, filters, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
+from django.db.models import Avg, Count
 from .models import Genre, Series, SeriesGenre, Chapter, SeriesRating, SeriesView, ChapterView
 from .serializers import (
     GenreSerializer, SeriesSerializer, SeriesDetailSerializer,
@@ -33,14 +34,25 @@ class SeriesViewSet(viewsets.ModelViewSet):
     """
     ViewSet for viewing and editing Series instances.
     """
-    queryset = Series.objects.all().prefetch_related('genres', 'chapters')
+    queryset = Series.objects.all().prefetch_related('genres', 'chapters').annotate(
+        avg_rating=Avg('ratings__rating'),
+        total_views=Count('views__visitor_id', distinct=True) + Count('chapters__chapter_views__visitor_id', distinct=True)
+    )
     pagination_class = None
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['status']
     search_fields = ['title', 'description']
     ordering_fields = ['created_at', 'updated_at', 'title']
     ordering = ['-created_at']
+
+    def get_permissions(self):
+        """
+        Allow anonymous access to list and retrieve actions.
+        """
+        if self.action in ['list', 'retrieve']:
+            return [permissions.AllowAny()]
+        return super().get_permissions()
 
     def get_serializer_class(self):
         if self.action == 'retrieve':
@@ -115,7 +127,7 @@ class SeriesViewSet(viewsets.ModelViewSet):
         serializer = SeriesRatingSerializer(rating)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     
-    @action(detail=True, methods=['post'])
+    @action(detail=True, methods=['post'], permission_classes=[permissions.AllowAny])
     def track_view(self, request, pk=None):
         """Track a view for this series."""
         series = self.get_object()
@@ -144,16 +156,6 @@ class SeriesViewSet(viewsets.ModelViewSet):
             'message': 'View tracked' if created else 'View already recorded',
             'view_count': series.total_view_count
         }, status=status.HTTP_200_OK)
-    
-    def _get_client_ip(self, request):
-        """Get client IP address from request."""
-        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-        if x_forwarded_for:
-            ip = x_forwarded_for.split(',')[0]
-        else:
-            ip = request.META.get('REMOTE_ADDR')
-        return ip
-
 
 class SeriesGenreViewSet(viewsets.ModelViewSet):
     """
@@ -168,12 +170,22 @@ class ChapterViewSet(viewsets.ModelViewSet):
     """
     ViewSet for viewing and editing Chapter instances.
     """
-    queryset = Chapter.objects.all().select_related('series')
-    permission_classes = [permissions.AllowAny]
+    queryset = Chapter.objects.all().select_related('series').annotate(
+        view_count_annotation=Count('chapter_views', distinct=True)
+    )
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
     filterset_fields = ['series']
     ordering_fields = ['chapter_number', 'publication_date', 'created_at']
     ordering = ['series', 'chapter_number']
+
+    def get_permissions(self):
+        """
+        Allow anonymous access to list and retrieve actions.
+        """
+        if self.action in ['list', 'retrieve']:
+            return [permissions.AllowAny()]
+        return super().get_permissions()
 
     def get_serializer_class(self):
         if self.action == 'list':
@@ -206,7 +218,7 @@ class ChapterViewSet(viewsets.ModelViewSet):
             return Response(serializer.data)
         return Response({'message': 'No previous chapter available'}, status=status.HTTP_404_NOT_FOUND)
     
-    @action(detail=True, methods=['post'])
+    @action(detail=True, methods=['post'], permission_classes=[permissions.AllowAny])
     def track_view(self, request, pk=None):
         """Track a view for this chapter."""
         chapter = self.get_object()
@@ -235,12 +247,14 @@ class ChapterViewSet(viewsets.ModelViewSet):
             'message': 'View tracked' if created else 'View already recorded',
             'view_count': chapter.view_count
         }, status=status.HTTP_200_OK)
-    
+
+class ViewTrackingMixin:
     def _get_client_ip(self, request):
         """Get client IP address from request."""
         x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
         if x_forwarded_for:
-            ip = x_forwarded_for.split(',')[0]
+            # Get the last IP (closest proxy)
+            ip = x_forwarded_for.split(',')[-1].strip()
         else:
             ip = request.META.get('REMOTE_ADDR')
         return ip
