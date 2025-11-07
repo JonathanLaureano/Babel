@@ -41,8 +41,15 @@ export class EditSeries implements OnInit {
       return;
     }
 
-    this.libraryService.getGenres().subscribe(genres => {
-      this.genres = genres;
+    this.libraryService.getGenres().subscribe({
+      next: (genres) => {
+        this.genres = genres;
+      },
+      error: (err) => {
+        this.error = "Failed to load genres.";
+        this.loading = false;
+        console.error(err);
+      }
     });
 
     this.libraryService.getSeriesById(this.seriesId).subscribe({

@@ -34,7 +34,6 @@ export class Login {
     this.loading = true;
     this.error = null;
 
-    console.log('Attempting login with username:', this.credentials.username);
     this.authService.login(this.credentials).subscribe({
       next: () => {
         this.router.navigate(['/']);

@@ -26,10 +26,11 @@
       </select>
     </div>
     <div class="form-group">
-      <label for="genres">Genres</label>
-      <select id="genres" name="genres" [(ngModel)]="seriesUpdateData.genre_ids" multiple>
+      <label for="genres">Genres (select one or more)</label>
+      <select id="genres" name="genres" [(ngModel)]="seriesUpdateData.genre_ids" multiple aria-label="Select one or more genres for the series">
         <option *ngFor="let genre of genres" [value]="genre.genre_id">{{ genre.name }}</option>
       </select>
+      <small class="form-text text-muted">Hold Ctrl (Windows) or Cmd (Mac) to select multiple genres.</small>
     </div>
     <button type="submit" [disabled]="!seriesForm.form.valid || loading">
       {{ loading ? 'Updating...' : 'Update Series' }}

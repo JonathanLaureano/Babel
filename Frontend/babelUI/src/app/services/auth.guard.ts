@@ -27,9 +27,9 @@ export class AuthGuard implements CanActivate {
     }
     
     // Check if user is staff for staff-only routes
-    const isStaffRoute = state.url.startsWith('/staff');
+    const requiresStaff = route.data && route.data['requiresStaff'];
     
-    if (isStaffRoute && (!currentUser || !currentUser.is_staff)) {
+    if (requiresStaff && (!currentUser || !currentUser.is_staff)) {
       // Redirect to homepage or a general access denied page
       this.router.navigate(['/']);
       return false;

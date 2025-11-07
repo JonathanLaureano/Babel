@@ -1,9 +1,8 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Observable, throwError, of } from 'rxjs';
+import { Observable, throwError} from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { User, UpdateUserRequest, Role, RegisterData, AuthResponse} from '../models/user';
-import { AuthService } from './auth.service';
 
 @Injectable({
   providedIn: 'root'
@@ -12,7 +11,7 @@ export class UserService {
   private apiUrl = 'http://localhost:8000/api'; // Adjust this to match your backend URL
 
 
-  constructor(private http: HttpClient, private authService: AuthService) { }
+  constructor(private http: HttpClient) { }
 
   /**
    * Get all users (only available to staff)

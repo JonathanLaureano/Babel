@@ -27,8 +27,14 @@ export class AddSeries implements OnInit {
   constructor(private libraryService: LibraryService, private router: Router) {}
 
   ngOnInit(): void {
-    this.libraryService.getGenres().subscribe(genres => {
-      this.genres = genres;
+    this.libraryService.getGenres().subscribe({
+      next: (genres) => {
+        this.genres = genres;
+      },
+      error: (err) => {
+        this.error = 'Failed to load genres. Please try again later.';
+        console.error(err);
+      }
     });
   }
 

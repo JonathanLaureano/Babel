@@ -24,7 +24,10 @@
     </div>
     <div class="form-group">
       <label for="genres">Genres</label>
-      <select id="genres" name="genres" [(ngModel)]="series.genre_ids" multiple>
+      <span id="genres-instructions" class="form-instructions">
+        Hold Ctrl (Windows) or Cmd (Mac) to select multiple genres.
+      </span>
+      <select id="genres" name="genres" [(ngModel)]="series.genre_ids" multiple aria-label="Select genres" aria-describedby="genres-instructions">
         <option *ngFor="let genre of genres" [value]="genre.genre_id">{{ genre.name }}</option>
       </select>
     </div>

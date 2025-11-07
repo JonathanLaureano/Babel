@@ -6,22 +6,31 @@
     </button>
   </div>
 
-  <div class="tabs">
+  <div class="tabs" role="tablist">
     <button 
       class="tab-btn" 
+      role="tab"
       [class.active]="activeTab === 'series'"
+      [attr.aria-selected]="activeTab === 'series'"
+      aria-controls="series-panel"
       (click)="setActiveTab('series')">
       Series
     </button>
     <button 
       class="tab-btn" 
+      role="tab"
       [class.active]="activeTab === 'chapters'"
+      [attr.aria-selected]="activeTab === 'chapters'"
+      aria-controls="chapters-panel"
       (click)="setActiveTab('chapters')">
       Chapters
     </button>
     <button 
       class="tab-btn" 
+      role="tab"
       [class.active]="activeTab === 'users'"
+      [attr.aria-selected]="activeTab === 'users'"
+      aria-controls="users-panel"
       (click)="setActiveTab('users')">
       Users
     </button>
@@ -32,7 +41,7 @@
     <div *ngIf="errorMessage" class="error">{{ errorMessage }}</div>
 
     <!-- Series Tab -->
-    <div *ngIf="activeTab === 'series' && !isLoading" class="table-content">
+    <div *ngIf="activeTab === 'series' && !isLoading" class="table-content" role="tabpanel" id="series-panel" aria-labelledby="series-tab">
       <table class="admin-table">
         <thead>
           <tr>
@@ -45,13 +54,13 @@
             <td class="name-col">{{ item.title }}</td>
             <td class="actions-col">
               <div class="action-buttons">
-                <button class="btn btn-edit" (click)="editSeries(item.series_id)">
+                <button class="btn btn-edit" (click)="editSeries(item.series_id)" [attr.aria-label]="'Edit series: ' + item.title">
                   Edit Series
                 </button>
-                <button class="btn btn-add" (click)="addChapter(item.series_id)">
+                <button class="btn btn-add" (click)="addChapter(item.series_id)" [attr.aria-label]="'Add chapter to series: ' + item.title">
                   Add Chapter
                 </button>
-                <button class="btn btn-delete" (click)="deleteSeries(item.series_id)">
+                <button class="btn btn-delete" (click)="deleteSeries(item.series_id)" [attr.aria-label]="'Delete series: ' + item.title">
                   Delete Series
                 </button>
               </div>
@@ -65,7 +74,7 @@
     </div>
 
     <!-- Chapters Tab -->
-    <div *ngIf="activeTab === 'chapters' && !isLoading" class="table-content">
+    <div *ngIf="activeTab === 'chapters' && !isLoading" class="table-content" role="tabpanel" id="chapters-panel" aria-labelledby="chapters-tab">
       <table class="admin-table">
         <thead>
           <tr>
@@ -82,10 +91,10 @@
             <td>{{ item.series_title }}</td>
             <td class="actions-col">
               <div class="action-buttons">
-                <button class="btn btn-edit" (click)="editChapter(item.chapter_id)">
+                <button class="btn btn-edit" (click)="editChapter(item.chapter_id)" [attr.aria-label]="'Edit chapter: ' + item.title + ' Chapter ' + item.chapter_number">
                   Edit Chapter
                 </button>
-                <button class="btn btn-delete" (click)="deleteChapter(item.chapter_id)">
+                <button class="btn btn-delete" (click)="deleteChapter(item.chapter_id)" [attr.aria-label]="'Delete chapter: ' + item.title + ' Chapter ' + item.chapter_number">
                   Delete Chapter
                 </button>
               </div>
@@ -99,7 +108,7 @@
     </div>
 
     <!-- Users Tab -->
-    <div *ngIf="activeTab === 'users' && !isLoading" class="table-content">
+    <div *ngIf="activeTab === 'users' && !isLoading" class="table-content" role="tabpanel" id="users-panel" aria-labelledby="users-tab">
       <table class="admin-table">
         <thead>
           <tr>
@@ -112,10 +121,10 @@
             <td class="name-col">{{ item.username }}</td>
             <td class="actions-col">
               <div class="action-buttons">
-                <button class="btn btn-view" (click)="viewUserInfo(item.user_id)">
+                <button class="btn btn-view" (click)="viewUserInfo(item.user_id)" [attr.aria-label]="'View information for user: ' + item.username">
                   View Information
                 </button>
-                <button class="btn btn-delete" (click)="deleteUser(item.user_id)">
+                <button class="btn btn-delete" (click)="deleteUser(item.user_id)" [attr.aria-label]="'Delete user: ' + item.username">
                   Delete User
                 </button>
               </div>
