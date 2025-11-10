@@ -1,0 +1,208 @@
+<div class="job-detail-container">
+  <div class="header">
+    <button class="btn-back" (click)="goBack()">← Back to Jobs</button>
+  </div>
+
+  <div *ngIf="errorMessage" class="error-message">
+    {{ errorMessage }}
+  </div>
+
+  <div *ngIf="isLoading" class="loading">
+    Loading job details...
+  </div>
+
+  <div *ngIf="job" class="content">
+    <!-- Job Header -->
+    <div class="job-header-section">
+      <div class="title-section">
+        <h1>{{ job.english_title || job.korean_title || 'Translation Job' }}</h1>
+        <span class="status-badge" [ngClass]="'status-' + job.status">
+          {{ job.status }}
+        </span>
+      </div>
+
+      <div class="action-buttons">
+        <button 
+          class="btn-primary" 
+          *ngIf="canPreview()"
+          (click)="preview()">
+          Preview & Import
+        </button>
+        <button 
+          class="btn-danger" 
+          *ngIf="canDelete()"
+          (click)="deleteJob()">
+          Delete Job
+        </button>
+      </div>
+    </div>
+
+    <!-- Progress Section (for in-progress jobs) -->
+    <div *ngIf="isInProgress()" class="progress-container">
+      <div class="progress-header">
+        <h3>Translation Progress</h3>
+        <span class="progress-percentage">{{ job.progress_percentage | number:'1.0-0' }}%</span>
+      </div>
+      
+      <div class="progress-bar-large">
+        <div class="progress-fill" [style.width.%]="job.progress_percentage"></div>
+      </div>
+      
+      <div class="progress-stats">
+        <div class="stat-item">
+          <span class="stat-label">Completed</span>
+          <span class="stat-value">{{ job.chapters_completed }}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Requested</span>
+          <span class="stat-value">{{ job.chapters_requested }}</span>
+        </div>
+        <div class="stat-item" *ngIf="job.chapters_failed > 0">
+          <span class="stat-label">Failed</span>
+          <span class="stat-value failed">{{ job.chapters_failed }}</span>
+        </div>
+      </div>
+      
+      <div class="current-operation" *ngIf="job.current_operation">
+        <div class="spinner"></div>
+        <span>{{ job.current_operation }}</span>
+      </div>
+      
+      <div class="info-message">
+        <p>🔄 This page auto-refreshes every 3 seconds</p>
+        <p>You can safely leave this page - the job will continue in the background</p>
+      </div>
+    </div>
+
+    <!-- Novel Metadata -->
+    <div class="metadata-grid">
+      <div class="metadata-card">
+        <h3>Korean (Original)</h3>
+        <div class="metadata-content">
+          <div class="meta-row">
+            <strong>Title:</strong>
+            <span>{{ job.korean_title || 'N/A' }}</span>
+          </div>
+          <div class="meta-row">
+            <strong>Author:</strong>
+            <span>{{ job.korean_author || 'N/A' }}</span>
+          </div>
+          <div class="meta-row">
+            <strong>Genre:</strong>
+            <span>{{ job.korean_genre || 'N/A' }}</span>
+          </div>
+          <div class="meta-row full-width">
+            <strong>Description:</strong>
+            <p class="description">{{ job.korean_description || 'N/A' }}</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="metadata-card">
+        <h3>English (Translated)</h3>
+        <div class="metadata-content">
+          <div class="meta-row">
+            <strong>Title:</strong>
+            <span>{{ job.english_title || 'Not yet translated' }}</span>
+          </div>
+          <div class="meta-row">
+            <strong>Author:</strong>
+            <span>{{ job.english_author || 'N/A' }}</span>
+          </div>
+          <div class="meta-row">
+            <strong>Genre:</strong>
+            <span>{{ job.english_genre || 'Not yet translated' }}</span>
+          </div>
+          <div class="meta-row full-width">
+            <strong>Description:</strong>
+            <p class="description">{{ job.english_description || 'Not yet translated' }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Source Information -->
+    <div class="info-card">
+      <h3>Source Information</h3>
+      <div class="info-content">
+        <div class="info-row">
+          <strong>Novel URL:</strong>
+          <a [href]="job.novel_url" target="_blank" class="link">{{ job.novel_url }}</a>
+        </div>
+        <div class="info-row">
+          <strong>Created:</strong>
+          <span>{{ formatDate(job.created_at) }}</span>
+        </div>
+        <div class="info-row">
+          <strong>Last Updated:</strong>
+          <span>{{ formatDate(job.updated_at) }}</span>
+        </div>
+        <div class="info-row" *ngIf="job.completed_at">
+          <strong>Completed:</strong>
+          <span>{{ formatDate(job.completed_at) }}</span>
+        </div>
+        <div class="info-row" *ngIf="job.imported_series">
+          <strong>Imported to Library:</strong>
+          <span class="success-text">✓ Yes (Series ID: {{ job.imported_series }})</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Error Information -->
+    <div class="error-card" *ngIf="job.status === 'failed' && job.error_message">
+      <h3>❌ Error Details</h3>
+      <div class="error-content">
+        <p>{{ job.error_message }}</p>
+      </div>
+    </div>
+
+    <!-- Chapters List -->
+    <div class="chapters-section" *ngIf="job.cached_chapters && job.cached_chapters.length > 0">
+      <h3>Cached Chapters ({{ job.cached_chapters.length }})</h3>
+      
+      <div class="chapters-list">
+        <div *ngFor="let chapter of job.cached_chapters" class="chapter-item" [ngClass]="'chapter-' + chapter.status">
+          <div class="chapter-header">
+            <div class="chapter-number">
+              <span class="chapter-badge">Ch {{ chapter.chapter_number }}</span>
+              <span class="status-icon" [ngSwitch]="chapter.status">
+                <span *ngSwitchCase="'pending'">⏳</span>
+                <span *ngSwitchCase="'scraped'">📄</span>
+                <span *ngSwitchCase="'translated'">📝</span>
+                <span *ngSwitchCase="'polished'">✨</span>
+                <span *ngSwitchCase="'failed'">❌</span>
+              </span>
+            </div>
+            <div class="chapter-titles">
+              <div class="korean-title">{{ chapter.korean_title }}</div>
+              <div class="english-title" *ngIf="chapter.english_title">
+                {{ chapter.english_title }}
+              </div>
+            </div>
+          </div>
+          
+          <div class="chapter-details">
+            <span class="chapter-status" [ngClass]="'status-' + chapter.status">
+              {{ chapter.status }}
+            </span>
+            <span class="word-count" *ngIf="chapter.word_count">
+              {{ chapter.word_count }} words
+            </span>
+            <a [href]="chapter.chapter_url" target="_blank" class="source-link">
+              View Source
+            </a>
+          </div>
+
+          <div class="chapter-error" *ngIf="chapter.error_message">
+            <strong>Error:</strong> {{ chapter.error_message }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Empty State -->
+    <div class="empty-chapters" *ngIf="!job.cached_chapters || job.cached_chapters.length === 0">
+      <p>No chapters cached yet. The translation process is starting...</p>
+    </div>
+  </div>
+</div>

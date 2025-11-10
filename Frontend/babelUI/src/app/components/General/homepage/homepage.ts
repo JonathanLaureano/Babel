@@ -3,6 +3,13 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { LibraryService } from '../../../services/library.service';
 import { Series } from '../../../models/series';
+import { ChapterListItem } from '../../../models/chapter';
+import { forkJoin, of } from 'rxjs';
+import { catchError, map } from 'rxjs/operators';
+
+interface SeriesWithRecentChapters extends Series {
+  recent_chapters?: ChapterListItem[];
+}
 
 @Component({
   selector: 'app-homepage',
@@ -12,7 +19,7 @@ import { Series } from '../../../models/series';
   standalone: true,
 })
 export class Homepage implements OnInit {
-  series: Series[] = [];
+  series: SeriesWithRecentChapters[] = [];
   loading = true;
   error: string | null = null;
 
@@ -31,8 +38,34 @@ export class Homepage implements OnInit {
     this.libraryService.getSeries().subscribe({
       next: (data: Series[]) => {
         console.log('Series data received:', data);
-        this.series = data;
-        this.loading = false;
+        
+        // Fetch recent chapters for each series
+        const seriesWithChapters$ = data.map(s => 
+          this.libraryService.getSeriesChapters(s.series_id).pipe(
+            map(chapters => ({
+              ...s,
+              recent_chapters: chapters.slice(-3).reverse() // Get last 3 chapters, most recent first
+            })),
+            catchError(() => of({ ...s, recent_chapters: [] }))
+          )
+        );
+
+        if (seriesWithChapters$.length > 0) {
+          forkJoin(seriesWithChapters$).subscribe({
+            next: (seriesData) => {
+              this.series = seriesData;
+              this.loading = false;
+            },
+            error: (err: any) => {
+              console.error('Error loading chapter data:', err);
+              this.series = data.map(s => ({ ...s, recent_chapters: [] }));
+              this.loading = false;
+            }
+          });
+        } else {
+          this.series = [];
+          this.loading = false;
+        }
       },
       error: (err: any) => {
         console.error('Error loading series:', err);

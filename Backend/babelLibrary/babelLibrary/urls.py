@@ -13,4 +13,5 @@ urlpatterns = [
     path('api/', include('users.urls')),
     path('api/library/', include('library.urls')),
     path('api/', include('comments.urls')),
+    path('api/translator/', include('translator.urls')),
 ]

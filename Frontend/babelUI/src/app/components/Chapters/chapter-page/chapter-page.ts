@@ -28,14 +28,17 @@ export class ChapterPage implements OnInit {
   ) { }
 
   ngOnInit(): void {
-    const chapterId = this.route.snapshot.paramMap.get('chapterId');
-    const seriesId = this.route.snapshot.paramMap.get('id');
-    if (seriesId && chapterId) {
-      this.loadChapterData(seriesId, chapterId);
-    } else {
-      this.error = 'Missing series or chapter ID.';
-      this.loading = false;
-    }
+    // Subscribe to route parameter changes instead of using snapshot
+    this.route.paramMap.subscribe(params => {
+      const chapterId = params.get('chapterId');
+      const seriesId = params.get('id');
+      if (seriesId && chapterId) {
+        this.loadChapterData(seriesId, chapterId);
+      } else {
+        this.error = 'Missing series or chapter ID.';
+        this.loading = false;
+      }
+    });
   }
 
   loadChapterData(id: string, chapterId: string): void {

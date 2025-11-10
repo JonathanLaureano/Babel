@@ -16,7 +16,7 @@ import { forkJoin } from 'rxjs';
   standalone: true,
 })
 export class Admin implements OnInit {
-  activeTab: 'series' | 'chapters' | 'users' = 'series';
+  activeTab: 'series' | 'chapters' | 'users' | 'translator' = 'series';
   
   series: Series[] = [];
   chapters: ChapterListItem[] = [];
@@ -35,9 +35,13 @@ export class Admin implements OnInit {
     this.loadData();
   }
 
-  setActiveTab(tab: 'series' | 'chapters' | 'users'): void {
+  setActiveTab(tab: 'series' | 'chapters' | 'users' | 'translator'): void {
     this.activeTab = tab;
-    this.loadData();
+    if (tab === 'translator') {
+      this.router.navigate(['/staff/translator']);
+    } else {
+      this.loadData();
+    }
   }
 
   loadData(): void {
