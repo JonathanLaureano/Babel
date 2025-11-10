@@ -1,0 +1,75 @@
+<div class="create-job-container">
+  <div class="header">
+    <h1>Create Translation Job</h1>
+  </div>
+
+  <div class="form-container">
+    <div *ngIf="errorMessage" class="error-message">
+      {{ errorMessage }}
+    </div>
+
+    <form (ngSubmit)="createJob()">
+      <div class="form-group">
+        <label for="novelUrl">Novel URL *</label>
+        <input
+          type="url"
+          id="novelUrl"
+          [(ngModel)]="novelUrl"
+          name="novelUrl"
+          placeholder="https://example.com/novel/12345"
+          required
+          [disabled]="isSubmitting"
+        />
+        <small class="help-text">Enter the main novel page URL (with chapter list)</small>
+      </div>
+
+      <div class="form-group">
+        <label class="checkbox-label">
+          <input
+            type="checkbox"
+            [(ngModel)]="translateAll"
+            name="translateAll"
+            [disabled]="isSubmitting"
+          />
+          Translate All Available Chapters
+        </label>
+        <small class="help-text">Check this to translate all chapters (automatically continues from where you left off)</small>
+      </div>
+
+      <div class="form-group" *ngIf="!translateAll">
+        <label for="chaptersRequested">Number of Chapters *</label>
+        <input
+          type="number"
+          id="chaptersRequested"
+          [(ngModel)]="chaptersRequested"
+          name="chaptersRequested"
+          min="1"
+          max="100"
+          required
+          [disabled]="isSubmitting"
+        />
+        <small class="help-text">How many chapters to translate (1-100). Start with 1-2 for testing.</small>
+      </div>
+
+      <div class="info-box">
+        <h4>ℹ️ Important Notes:</h4>
+        <ul>
+          <li>Translation process takes 1-2 minutes per chapter</li>
+          <li>Job runs in the background - you can leave this page</li>
+          <li>Each chapter goes through: Scrape → Translate → Polish</li>
+          <li><strong>Automatic Continuation:</strong> System detects existing series and starts from the next chapter</li>
+          <li>Preview and import to library after completion</li>
+        </ul>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="btn-secondary" (click)="cancel()" [disabled]="isSubmitting">
+          Cancel
+        </button>
+        <button type="submit" class="btn-primary" [disabled]="isSubmitting">
+          {{ isSubmitting ? 'Creating...' : 'Create Job' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

@@ -16,29 +16,30 @@
     <p>No series available yet.</p>
   </div>
 
-  <div *ngIf="!loading && !error && series.length > 0" class="series-section">
-    <h2>Available Series</h2>
-    <div class="series-grid">
-      <div *ngFor="let s of series" class="series-card">
-        <a [routerLink]="['/series', s.series_id]">
-          <div class="series-image" *ngIf="s.cover_image_url">
-            <img [src]="s.cover_image_url" [alt]="s.title">
-          </div>
-          <div class="series-image placeholder" *ngIf="!s.cover_image_url">
-            <span>{{ s.title.charAt(0) }}</span>
-          </div>
-          <div class="series-info">
-            <h3>{{ s.title }}</h3>
-            <p class="description" *ngIf="s.description">{{ s.description }}</p>
-            <div class="series-meta">
-              <span class="chapter-count">{{ s.chapters_count }} chapters</span>
-              <span class="status" [class]="s.status.toLowerCase()">{{ s.status }}</span>
-            </div>
-            <div class="genres" *ngIf="s.genres && s.genres.length > 0">
-              <span *ngFor="let genre of s.genres" class="genre-tag">{{ genre.name }}</span>
-            </div>
+  <div *ngIf="!loading && !error && series.length > 0" class="latest-updates-section">
+    <h2>Latest Updates</h2>
+    <div class="updates-list">
+      <div *ngFor="let s of series" class="update-card">
+        <a [routerLink]="['/series', s.series_id]" class="cover-link">
+          <div class="cover-thumbnail">
+            <img [src]="s.cover_image_url || 'https://via.placeholder.com/150x220.png?text=No+Cover'" [alt]="s.title">
           </div>
         </a>
+        <div class="update-info">
+          <a [routerLink]="['/series', s.series_id]" class="series-title-link">
+            <h3 class="series-title">{{ s.title }}</h3>
+          </a>
+          <div class="recent-chapters">
+            <a *ngFor="let chapter of s.recent_chapters" 
+               [routerLink]="['/series', s.series_id, 'chapter', chapter.chapter_id]" 
+               class="chapter-link">
+              <span class="chapter-label">Chapter {{ chapter.chapter_number }}</span>
+            </a>
+            <div *ngIf="!s.recent_chapters || s.recent_chapters.length === 0" class="no-chapters">
+              No chapters yet
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>

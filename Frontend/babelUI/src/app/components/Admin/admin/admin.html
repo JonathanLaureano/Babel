@@ -34,6 +34,15 @@
       (click)="setActiveTab('users')">
       Users
     </button>
+    <button 
+      class="tab-btn" 
+      role="tab"
+      [class.active]="activeTab === 'translator'"
+      [attr.aria-selected]="activeTab === 'translator'"
+      aria-controls="translator-panel"
+      (click)="setActiveTab('translator')">
+      Translator
+    </button>
   </div>
 
   <div class="table-container">

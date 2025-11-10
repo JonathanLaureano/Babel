@@ -1,0 +1,112 @@
+<div class="translator-container">
+  <div class="header">
+    <h1>Translation Jobs</h1>
+    <div class="header-actions">
+      <label class="auto-refresh">
+        <input type="checkbox" [checked]="autoRefresh" (change)="toggleAutoRefresh()" />
+        Auto-refresh
+      </label>
+      <button class="btn-primary" (click)="createJob()">+ New Translation Job</button>
+    </div>
+  </div>
+
+  <div *ngIf="errorMessage" class="error-message">
+    {{ errorMessage }}
+  </div>
+
+  <div *ngIf="isLoading && jobs.length === 0" class="loading">
+    Loading translation jobs...
+  </div>
+
+  <div *ngIf="!isLoading && jobs.length === 0" class="no-data">
+    <p>No translation jobs found.</p>
+    <button class="btn-primary" (click)="createJob()">Create Your First Job</button>
+  </div>
+
+  <div *ngIf="jobs.length > 0" class="jobs-grid">
+    <div *ngFor="let job of jobs" class="job-card" [class]="getStatusClass(job.status)">
+      <div class="job-header">
+        <div class="job-title">
+          <span class="status-icon">{{ getStatusIcon(job.status) }}</span>
+          <h3>{{ job.english_title || job.korean_title || 'Untitled' }}</h3>
+        </div>
+        <span class="job-status" [class]="getStatusClass(job.status)">
+          {{ job.status }}
+        </span>
+      </div>
+
+      <div class="job-body">
+        <div class="job-info">
+          <p class="job-author" *ngIf="job.english_author || job.korean_author">
+            <strong>Author:</strong> {{ job.english_author || job.korean_author }}
+          </p>
+          <p class="job-genre" *ngIf="job.english_genre || job.korean_genre">
+            <strong>Genre:</strong> {{ job.english_genre || job.korean_genre }}
+          </p>
+          <p class="job-url">
+            <strong>Source:</strong> 
+            <a [href]="job.novel_url" target="_blank" class="novel-link">{{ job.novel_url }}</a>
+          </p>
+        </div>
+
+        <div class="progress-section" *ngIf="isJobInProgress(job)">
+          <div class="progress-bar">
+            <div class="progress-fill" [style.width.%]="job.progress_percentage"></div>
+          </div>
+          <p class="progress-text">
+            {{ job.chapters_completed }} / {{ job.chapters_requested }} chapters 
+            ({{ job.progress_percentage | number:'1.0-0' }}%)
+          </p>
+          <p class="current-operation" *ngIf="job.current_operation">
+            {{ job.current_operation }}
+          </p>
+        </div>
+
+        <div class="stats" *ngIf="!isJobInProgress(job)">
+          <div class="stat">
+            <span class="stat-value">{{ job.chapters_completed }}</span>
+            <span class="stat-label">Completed</span>
+          </div>
+          <div class="stat" *ngIf="job.chapters_failed > 0">
+            <span class="stat-value failed">{{ job.chapters_failed }}</span>
+            <span class="stat-label">Failed</span>
+          </div>
+          <div class="stat">
+            <span class="stat-value">{{ job.chapters_requested }}</span>
+            <span class="stat-label">Requested</span>
+          </div>
+        </div>
+
+        <div class="error-info" *ngIf="job.status === 'failed' && job.error_message">
+          <p class="error-label">Error:</p>
+          <p class="error-text">{{ job.error_message }}</p>
+        </div>
+
+        <div class="import-badge" *ngIf="job.imported_series">
+          <span>✓ Imported to Library</span>
+        </div>
+      </div>
+
+      <div class="job-footer">
+        <span class="job-date">{{ formatDate(job.created_at) }}</span>
+        <div class="job-actions">
+          <button class="btn-secondary" (click)="viewJob(job.job_id)">
+            View Details
+          </button>
+          <button 
+            class="btn-primary" 
+            *ngIf="canPreview(job)"
+            (click)="previewJob(job.job_id)">
+            Preview
+          </button>
+          <button 
+            class="btn-danger" 
+            *ngIf="canDelete(job)"
+            (click)="deleteJob(job.job_id)">
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

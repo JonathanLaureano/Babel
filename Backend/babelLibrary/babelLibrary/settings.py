@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     'users',
     'library',
     'comments',
+    'translator',
 ]
 
 MIDDLEWARE = [
@@ -210,3 +211,7 @@ SIMPLE_JWT = {
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
 ]
+
+# Gemini API Configuration
+GEMINI_API_KEY = config('GEMINI_API_KEY', default='')
+GEMINI_MODEL = 'gemini-2.0-flash-exp'  # Default model

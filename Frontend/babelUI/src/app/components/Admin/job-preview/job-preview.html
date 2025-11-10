@@ -1,0 +1,197 @@
+<div class="preview-container">
+  <div class="header">
+    <button class="btn-back" (click)="goBack()">← Back</button>
+    <h1>Preview Translation</h1>
+  </div>
+
+  <div *ngIf="errorMessage" class="error-message">
+    {{ errorMessage }}
+  </div>
+
+  <div *ngIf="isLoading" class="loading">
+    Loading preview...
+  </div>
+
+  <!-- Preview Mode -->
+  <div *ngIf="preview && viewMode === 'preview'" class="content">
+    <!-- Novel Metadata -->
+    <div class="metadata-section">
+      <h2>{{ preview.english_title }}</h2>
+      <div class="metadata-details">
+        <p><strong>Author:</strong> {{ preview.english_author }}</p>
+        <p><strong>Genre:</strong> {{ preview.english_genre }}</p>
+        <p class="description"><strong>Description:</strong><br/>{{ preview.english_description }}</p>
+      </div>
+    </div>
+
+    <!-- Chapter Selection -->
+    <div class="selection-section">
+      <div class="selection-header">
+        <h3>Select Chapters to Import</h3>
+        <div class="selection-actions">
+          <button class="btn-link" (click)="selectAllChapters()">Select All</button>
+          <button class="btn-link" (click)="deselectAllChapters()">Deselect All</button>
+        </div>
+      </div>
+
+      <div class="selection-stats">
+        <div class="stat">
+          <span class="stat-value">{{ selectedChapterNumbers.length }}</span>
+          <span class="stat-label">Selected</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value">{{ preview.chapters.length }}</span>
+          <span class="stat-label">Available</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value">{{ getTotalWordCount() | number }}</span>
+          <span class="stat-label">Total Words</span>
+        </div>
+      </div>
+
+      <div class="chapters-grid">
+        <div *ngFor="let chapter of preview.chapters" 
+             class="chapter-card"
+             [class.selected]="isChapterSelected(chapter.chapter_number)"
+             (click)="toggleChapterSelection(chapter.chapter_number)">
+          <div class="chapter-checkbox">
+            <input 
+              type="checkbox" 
+              [checked]="isChapterSelected(chapter.chapter_number)"
+              (click)="$event.stopPropagation()"
+              (change)="toggleChapterSelection(chapter.chapter_number)"
+            />
+          </div>
+          <div class="chapter-info">
+            <div class="chapter-number-badge">Chapter {{ chapter.chapter_number }}</div>
+            <div class="chapter-title">{{ chapter.english_title }}</div>
+            <div class="chapter-meta">
+              <span>{{ chapter.word_count | number }} words</span>
+              <button 
+                class="btn-view" 
+                (click)="$event.stopPropagation(); viewChapterContent(chapter.chapter_number)">
+                View Full Content
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Action Bar -->
+    <div class="action-bar">
+      <div class="action-info">
+        <p>{{ selectedChapterNumbers.length }} chapter(s) selected</p>
+      </div>
+      <button 
+        class="btn-import" 
+        [disabled]="selectedChapterNumbers.length === 0"
+        (click)="openImportDialog()">
+        Import to Library
+      </button>
+    </div>
+  </div>
+
+  <!-- Full Chapter View Mode -->
+  <div *ngIf="viewMode === 'full-chapter' && selectedChapter" class="chapter-view">
+    <div class="chapter-view-header">
+      <button class="btn-back" (click)="closeChapterView()">← Back to Preview</button>
+      <h2>Chapter {{ selectedChapter.chapter_number }}: {{ selectedChapter.english_title }}</h2>
+    </div>
+
+    <div class="chapter-content-container">
+      <div class="content-section">
+        <h3>Korean (Original)</h3>
+        <div class="chapter-content korean">
+          <p>{{ selectedChapter.korean_content }}</p>
+        </div>
+      </div>
+
+      <div class="content-section">
+        <h3>English (Raw Translation)</h3>
+        <div class="chapter-content english-raw">
+          <p>{{ selectedChapter.english_content_raw }}</p>
+        </div>
+      </div>
+
+      <div class="content-section highlighted">
+        <h3>English (Final Polished) ✨</h3>
+        <div class="chapter-content english-final">
+          <p>{{ selectedChapter.english_content_final }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Import Dialog Modal -->
+<div *ngIf="showImportDialog" class="modal-overlay" (click)="closeImportDialog()">
+  <div class="modal-dialog" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Import to Library</h2>
+      <button class="btn-close" (click)="closeImportDialog()">×</button>
+    </div>
+
+    <div class="modal-body">
+      <div *ngIf="errorMessage" class="error-message">
+        {{ errorMessage }}
+      </div>
+
+      <div class="import-summary">
+        <h3>You are importing:</h3>
+        <p><strong>Novel:</strong> {{ preview?.english_title }}</p>
+        <p><strong>Chapters:</strong> {{ selectedChapterNumbers.length }} selected</p>
+        <p><strong>Total Words:</strong> {{ getTotalWordCount() | number }}</p>
+      </div>
+
+      <form>
+        <div class="form-group">
+          <label for="coverImageUrl">Cover Image URL (Optional)</label>
+          <input
+            type="url"
+            id="coverImageUrl"
+            [(ngModel)]="coverImageUrl"
+            name="coverImageUrl"
+            placeholder="https://example.com/cover.jpg"
+            [disabled]="isImporting"
+          />
+          <small class="help-text">Provide a URL to the cover image</small>
+        </div>
+
+        <div class="form-group">
+          <label for="seriesStatus">Series Status</label>
+          <select
+            id="seriesStatus"
+            [(ngModel)]="seriesStatus"
+            name="seriesStatus"
+            [disabled]="isImporting"
+          >
+            <option value="Ongoing">Ongoing</option>
+            <option value="Completed">Completed</option>
+            <option value="Hiatus">Hiatus</option>
+          </select>
+          <small class="help-text">Current status of the novel series</small>
+        </div>
+
+        <div class="warning-box">
+          <p>⚠️ <strong>Important:</strong></p>
+          <ul>
+            <li>This will create a new series in your library</li>
+            <li>Selected chapters will be imported with polished English translations</li>
+            <li>The genre will be automatically created if it doesn't exist</li>
+            <li>You cannot undo this operation</li>
+          </ul>
+        </div>
+      </form>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-secondary" (click)="closeImportDialog()" [disabled]="isImporting">
+        Cancel
+      </button>
+      <button class="btn-import" (click)="importToLibrary()" [disabled]="isImporting">
+        {{ isImporting ? 'Importing...' : 'Confirm Import' }}
+      </button>
+    </div>
+  </div>
+</div>
