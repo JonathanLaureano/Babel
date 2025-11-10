@@ -52,12 +52,7 @@ This project was generated using [Angular CLI](https://github.com/angular/angula
    npm install
    ```
 
-3. Install date-fns for accurate date formatting:
-   ```bash
-   npm install date-fns
-   ```
-
-4. Start a local development server:
+3. Start a local development server:
    ```bash
    ng serve
    ```
