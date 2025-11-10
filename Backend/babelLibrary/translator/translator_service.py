@@ -296,7 +296,7 @@ def process_chapter(job: TranslationJob, chapter_info: dict) -> bool:
             cache.error_message = str(e)
             cache.save()
         except TranslatedChapterCache.DoesNotExist:
-            pass
+            pass  # It's possible the cache entry does not exist yet; nothing to update in this case.
         
         # Update job
         job.chapters_failed += 1
@@ -411,5 +411,5 @@ def start_translation_job(job_id):
             job.error_message = str(e)
             job.completed_at = timezone.now()
             job.save()
-        except:
-            pass
+        except  Exception as inner_e:
+            logger.error(f"Failed to update job status to 'failed' for job {job_id}: {inner_e}")

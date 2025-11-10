@@ -48,7 +48,6 @@ def scrape_novel_page(url: str) -> Dict[str, Optional[str]]:
         # Find the view-content div that contains author, genre, and publisher info
         info_div = soup.select_one('.view-title .col-sm-8 div.view-content[style*="color: #666666"]')
         if info_div:
-            text = info_div.get_text()
             
             # Extract Author (after fa-user icon)
             author_icon = info_div.find('i', class_='fa-user')

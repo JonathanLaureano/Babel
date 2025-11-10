@@ -3,7 +3,6 @@ Serializers for the translator app.
 """
 from rest_framework import serializers
 from .models import TranslationJob, TranslatedChapterCache
-from library.models import Series, Chapter
 
 
 class TranslatedChapterCacheSerializer(serializers.ModelSerializer):

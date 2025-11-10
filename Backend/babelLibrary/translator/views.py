@@ -9,7 +9,7 @@ from django.db import transaction
 from threading import Thread
 import logging
 
-from .models import TranslationJob, TranslatedChapterCache
+from .models import TranslationJob
 from .serializers import (
     TranslationJobSerializer,
     TranslationJobListSerializer,

@@ -43,7 +43,7 @@
 
 .updates-list {
   display: flex;
-  flex-direction: row; /* Changed from column */
+  flex-direction: row;
   flex-wrap: wrap; /* Added to wrap cards */
   gap: 1.5rem;
 }
@@ -54,7 +54,7 @@
   gap: 1rem; /* Reduced gap */
   background: white;
   border-radius: 2px;
-  padding:1%;
+  padding: 1%;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   transition: transform 0.2s, box-shadow 0.2s;
   align-items: flex-start;
