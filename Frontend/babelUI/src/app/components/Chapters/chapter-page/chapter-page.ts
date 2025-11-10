@@ -5,10 +5,11 @@ import { LibraryService } from '../../../services/library.service';
 import { Chapter, ChapterListItem } from '../../../models/chapter';
 import { forkJoin } from 'rxjs';
 import { Series } from '../../../models/series';
+import { CommentsComponent } from '../../Users/comments/comments';
 
 @Component({
   selector: 'app-chapter-page',
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, CommentsComponent],
   templateUrl: './chapter-page.html',
   styleUrl: './chapter-page.css',
   standalone: true,
