@@ -94,13 +94,27 @@ class CommentViewSet(viewsets.ModelViewSet):
             object_id=object_id,
             parent_comment=None  # Only get top-level comments
         )
-        
+
+        # Apply ordering if specified in query params
+        ordering = request.query_params.get('ordering')
+        allowed_ordering_fields = getattr(self, 'ordering_fields', ['created_at', 'like_count'])
+        if ordering:
+            # Support comma-separated ordering fields, as in DRF
+            ordering_fields = [field.strip() for field in ordering.split(',')]
+            # Only allow ordering by allowed fields
+            valid_fields = []
+            for field in ordering_fields:
+                field_name = field.lstrip('-')
+                if field_name in allowed_ordering_fields:
+                    valid_fields.append(field)
+            if valid_fields:
+                comments = comments.order_by(*valid_fields)
+
         # Apply pagination
         page = self.paginate_queryset(comments)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
             return self.get_paginated_response(serializer.data)
-        
         serializer = self.get_serializer(comments, many=True)
         return Response(serializer.data)
     
