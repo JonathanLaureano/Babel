@@ -7,10 +7,11 @@ import { Series } from '../../../models/series';
 import { ChapterListItem } from '../../../models/chapter';
 import { StarRatingComponent } from '../star-rating/star-rating';
 import { RatingSubmitComponent } from '../rating-submit/rating-submit';
+import { CommentsComponent } from '../../Users/comments/comments';
 
 @Component({
   selector: 'app-series-page',
-  imports: [CommonModule, RouterModule, StarRatingComponent, RatingSubmitComponent],
+  imports: [CommonModule, RouterModule, StarRatingComponent, RatingSubmitComponent, CommentsComponent],
   templateUrl: './series-page.html',
   styleUrl: './series-page.css',
   standalone: true,

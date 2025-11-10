@@ -42,12 +42,25 @@ An app for reading machine translated novels. A python django backend and an ang
 
 This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 20.3.7.
 
+1. Navigate to the Frontend directory:
+   ```bash
+   cd Frontend/babelUI
+   ```
 
-To start a local development server, run:
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
 
-```bash
-ng serve
-```
+3. Install date-fns for accurate date formatting:
+   ```bash
+   npm install date-fns
+   ```
+
+4. Start a local development server:
+   ```bash
+   ng serve
+   ```
 
 Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
 

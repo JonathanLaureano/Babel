@@ -12,4 +12,5 @@ urlpatterns = [
     path('api/users/login/', login_view, name='login'), # Add the login path here
     path('api/', include('users.urls')),
     path('api/library/', include('library.urls')),
+    path('api/', include('comments.urls')),
 ]

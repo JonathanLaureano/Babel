@@ -1,0 +1,179 @@
+<div class="comments-container">
+  <!-- Header with comment count and sort dropdown -->
+  <div class="comments-header">
+    <h3 class="comment-count">{{ commentCount }} {{ commentCount === 1 ? 'Comment' : 'Comments' }}</h3>
+    <div class="sort-dropdown">
+      <label for="sort-order">Sort by:</label>
+      <select id="sort-order" [(ngModel)]="sortOrder" (change)="onSortChange()">
+        <option value="newest">Newest</option>
+        <option value="most_liked">Most Liked</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Error message -->
+  <div *ngIf="error" class="error-message">
+    {{ error }}
+  </div>
+
+  <!-- New comment form -->
+  <div *ngIf="isLoggedIn" class="new-comment-form">
+    <textarea 
+      [(ngModel)]="newCommentText" 
+      placeholder="Write a comment..."
+      rows="3"
+      class="comment-textarea"
+    ></textarea>
+    <button 
+      (click)="createComment()" 
+      class="submit-button"
+      [disabled]="!newCommentText.trim()"
+    >
+      Post Comment
+    </button>
+  </div>
+
+  <div *ngIf="!isLoggedIn" class="login-prompt">
+    Please log in to comment
+  </div>
+
+  <!-- Loading state -->
+  <div *ngIf="loading" class="loading">
+    Loading comments...
+  </div>
+
+  <!-- Comments list -->
+  <div *ngIf="!loading" class="comments-list">
+    <div *ngIf="comments.length === 0" class="no-comments">
+      No comments yet. Be the first to comment!
+    </div>
+
+    <div *ngFor="let comment of comments" class="comment-item">
+      <!-- Comment header -->
+      <div class="comment-header">
+        <span class="comment-author">{{ comment.user_username }}</span>
+        <span class="comment-time">{{ getTimeSince(comment.created_at) }}</span>
+        <span *ngIf="comment.updated_at !== comment.created_at" class="edited-label">(edited)</span>
+      </div>
+
+      <!-- Comment body (view mode) -->
+      <div *ngIf="editingCommentId !== comment.comment_id" class="comment-body">
+        <p class="comment-text">{{ comment.text }}</p>
+      </div>
+
+      <!-- Comment body (edit mode) -->
+      <div *ngIf="editingCommentId === comment.comment_id" class="comment-edit-form">
+        <textarea 
+          [(ngModel)]="editingCommentText" 
+          rows="3"
+          class="comment-textarea"
+        ></textarea>
+        <div class="edit-actions">
+          <button (click)="saveEdit(comment.comment_id)" class="save-button">Save</button>
+          <button (click)="cancelEdit()" class="cancel-button">Cancel</button>
+        </div>
+      </div>
+
+      <!-- Comment actions -->
+      <div class="comment-actions">
+        <button 
+          (click)="toggleLike(comment)" 
+          class="like-button"
+          [class.liked]="comment.is_liked_by_user"
+        >
+          👍 {{ comment.like_count }}
+        </button>
+        <button 
+          *ngIf="isLoggedIn"
+          (click)="startReply(comment.comment_id)" 
+          class="reply-button"
+        >
+          Reply
+        </button>
+        <button 
+          *ngIf="canEditComment(comment)"
+          (click)="startEdit(comment)" 
+          class="edit-button"
+        >
+          Edit
+        </button>
+        <button 
+          *ngIf="canDeleteComment(comment)"
+          (click)="deleteComment(comment.comment_id)" 
+          class="delete-button"
+        >
+          Delete
+        </button>
+      </div>
+
+      <!-- Reply form -->
+      <div *ngIf="replyingToCommentId === comment.comment_id" class="reply-form">
+        <textarea 
+          [(ngModel)]="replyText" 
+          placeholder="Write a reply..."
+          rows="2"
+          class="comment-textarea"
+        ></textarea>
+        <div class="reply-actions">
+          <button (click)="createReply(comment.comment_id)" class="submit-button" [disabled]="!replyText.trim()">
+            Post Reply
+          </button>
+          <button (click)="cancelReply()" class="cancel-button">Cancel</button>
+        </div>
+      </div>
+
+      <!-- Replies -->
+      <div *ngIf="comment.replies && comment.replies.length > 0" class="replies-container">
+        <div *ngFor="let reply of comment.replies" class="reply-item">
+          <div class="comment-header">
+            <span class="comment-author">{{ reply.user_username }}</span>
+            <span class="comment-time">{{ getTimeSince(reply.created_at) }}</span>
+            <span *ngIf="reply.updated_at !== reply.created_at" class="edited-label">(edited)</span>
+          </div>
+          
+          <!-- Reply body (view mode) -->
+          <div *ngIf="editingCommentId !== reply.comment_id" class="comment-body">
+            <p class="comment-text">{{ reply.text }}</p>
+          </div>
+
+          <!-- Reply body (edit mode) -->
+          <div *ngIf="editingCommentId === reply.comment_id" class="comment-edit-form">
+            <textarea 
+              [(ngModel)]="editingCommentText" 
+              rows="3"
+              class="comment-textarea"
+            ></textarea>
+            <div class="edit-actions">
+              <button (click)="saveEdit(reply.comment_id)" class="save-button">Save</button>
+              <button (click)="cancelEdit()" class="cancel-button">Cancel</button>
+            </div>
+          </div>
+          
+          <div class="comment-actions">
+            <button 
+              (click)="toggleLike(reply)" 
+              class="like-button"
+              [class.liked]="reply.is_liked_by_user"
+            >
+              👍 {{ reply.like_count }}
+            </button>
+            <button 
+              *ngIf="canEditComment(reply)"
+              (click)="startEdit(reply)" 
+              class="edit-button"
+            >
+              Edit
+            </button>
+            <button 
+              *ngIf="canDeleteComment(reply)"
+              (click)="deleteComment(reply.comment_id)" 
+              class="delete-button"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

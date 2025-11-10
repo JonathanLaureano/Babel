@@ -36,4 +36,12 @@
     </a>
     <div *ngIf="!nextChapter"></div>
   </div>
+
+  <!-- Comments Section -->
+  <div class="comments-section">
+    <app-comments 
+      [contentType]="'chapter'" 
+      [objectId]="chapter.chapter_id">
+    </app-comments>
+  </div>
 </div>

@@ -2,5 +2,5 @@
   <span *ngFor="let star of stars" class="star" [ngClass]="star">
     {{ getStarIcon(star) }}
   </span>
-  <span class="rating-value" *ngIf="showValue">{{ rating.toFixed(1) }}</span>
+  <span class="rating-value" *ngIf="showValue && rating !== null">{{ rating.toFixed(1) }}</span>
 </div>
