@@ -21,9 +21,9 @@ class CommentSerializer(serializers.ModelSerializer):
     is_liked_by_user = serializers.SerializerMethodField()
     replies = serializers.SerializerMethodField()
     
-    # Fields for generic foreign key
-    content_type = serializers.CharField(write_only=True, required=True)
-    object_id = serializers.UUIDField(write_only=True, required=True)
+    # Fields for generic foreign key (write_only fields not required since this serializer is for reading)
+    content_type = serializers.CharField(write_only=True, required=False)
+    object_id = serializers.UUIDField(write_only=True, required=False)
     content_type_display = serializers.SerializerMethodField(read_only=True)
     
     class Meta:
@@ -53,36 +53,6 @@ class CommentSerializer(serializers.ModelSerializer):
             replies = obj.replies.all()
             return CommentReplySerializer(replies, many=True, context=self.context).data
         return []
-    
-    def validate_content_type(self, value):
-        """Validate that the content type is one of the allowed models."""
-        allowed_models = ['series', 'chapter', 'user']
-        if value.lower() not in allowed_models:
-            raise serializers.ValidationError(
-                f"Content type must be one of: {', '.join(allowed_models)}"
-            )
-        return value.lower()
-    
-    def create(self, validated_data):
-        """Override create to handle content type lookup."""
-        content_type_str = validated_data.pop('content_type')
-        object_id = validated_data.pop('object_id')
-        
-        # Get the ContentType object based on the model name
-        try:
-            if content_type_str == 'series':
-                content_type = ContentType.objects.get(app_label='library', model='series')
-            elif content_type_str == 'chapter':
-                content_type = ContentType.objects.get(app_label='library', model='chapter')
-            elif content_type_str == 'user':
-                content_type = ContentType.objects.get(app_label='users', model='user')
-        except ContentType.DoesNotExist:
-            raise serializers.ValidationError(f"Invalid content type: {content_type_str}")
-        
-        validated_data['content_type'] = content_type
-        validated_data['object_id'] = object_id
-        
-        return super().create(validated_data)
 
 
 class CommentReplySerializer(serializers.ModelSerializer):
@@ -139,6 +109,7 @@ class CommentCreateUpdateSerializer(serializers.ModelSerializer):
             validated_data['object_id'] = parent_comment.object_id
         elif content_type_str and object_id:
             # Get the ContentType object based on the model name
+            content_type = None
             try:
                 if content_type_str == 'series':
                     content_type = ContentType.objects.get(app_label='library', model='series')
@@ -146,8 +117,10 @@ class CommentCreateUpdateSerializer(serializers.ModelSerializer):
                     content_type = ContentType.objects.get(app_label='library', model='chapter')
                 elif content_type_str == 'user':
                     content_type = ContentType.objects.get(app_label='users', model='user')
+                else:
+                    raise serializers.ValidationError(f"Invalid content type: {content_type_str}")
             except ContentType.DoesNotExist:
-                raise serializers.ValidationError(f"Invalid content type: {content_type_str}")
+                raise serializers.ValidationError(f"Content type not found: {content_type_str}")
             
             validated_data['content_type'] = content_type
             validated_data['object_id'] = object_id

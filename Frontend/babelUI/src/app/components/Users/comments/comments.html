@@ -131,8 +131,22 @@
             <span *ngIf="reply.updated_at !== reply.created_at" class="edited-label">(edited)</span>
           </div>
           
-          <div class="comment-body">
+          <!-- Reply body (view mode) -->
+          <div *ngIf="editingCommentId !== reply.comment_id" class="comment-body">
             <p class="comment-text">{{ reply.text }}</p>
+          </div>
+
+          <!-- Reply body (edit mode) -->
+          <div *ngIf="editingCommentId === reply.comment_id" class="comment-edit-form">
+            <textarea 
+              [(ngModel)]="editingCommentText" 
+              rows="3"
+              class="comment-textarea"
+            ></textarea>
+            <div class="edit-actions">
+              <button (click)="saveEdit(reply.comment_id)" class="save-button">Save</button>
+              <button (click)="cancelEdit()" class="cancel-button">Cancel</button>
+            </div>
           </div>
           
           <div class="comment-actions">

@@ -15,12 +15,23 @@ class CommentViewSet(viewsets.ModelViewSet):
     ViewSet for viewing and editing Comment instances.
     Supports full CRUD operations, nested replies, and filtering by content type.
     """
-    queryset = Comment.objects.all().select_related('user', 'parent_comment', 'content_type').prefetch_related('likes', 'replies')
+    queryset = Comment.objects.all().select_related('user', 'parent_comment', 'content_type').prefetch_related('likes')
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
     filterset_fields = ['user', 'parent_comment']
     ordering_fields = ['created_at', 'updated_at']
     ordering = ['-created_at']
+    
+    def get_queryset(self):
+        """
+        Conditionally prefetch 'replies' only for actions that display nested comments.
+        This optimizes query performance by avoiding unnecessary prefetching.
+        """
+        qs = super().get_queryset()
+        # Only prefetch replies when displaying top-level comments with nested replies
+        if self.action in ['list', 'by_content', 'retrieve']:
+            return qs.prefetch_related('replies__user', 'replies__likes')
+        return qs
     
     def get_serializer_class(self):
         """Use different serializers for different actions."""

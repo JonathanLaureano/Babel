@@ -38,7 +38,12 @@ class Comment(models.Model):
         ]
     
     def __str__(self):
-        return f"Comment by {self.user.username} on {self.content_object}"
+        try:
+            content_display = self.content_object if self.content_object else f"{self.content_type.model}:{self.object_id}"
+            return f"Comment by {self.user.username} on {content_display}"
+        except Exception:
+            # Fallback if content_object is deleted or causes an error
+            return f"Comment by {self.user.username} on {self.content_type.model}:{self.object_id}"
     
     @property
     def like_count(self):
@@ -66,4 +71,8 @@ class CommentLike(models.Model):
         ]
     
     def __str__(self):
-        return f"{self.user.username} likes comment {self.comment.comment_id}"
+        try:
+            return f"{self.user.username} likes comment {self.comment.comment_id}"
+        except Exception:
+            # Fallback if user or comment is deleted or causes an error
+            return f"CommentLike {self.like_id}"
