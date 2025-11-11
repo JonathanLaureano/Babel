@@ -6,6 +6,8 @@ import { Chapter, ChapterListItem } from '../../../models/chapter';
 import { forkJoin } from 'rxjs';
 import { Series } from '../../../models/series';
 import { CommentsComponent } from '../../Users/comments/comments';
+import { AuthService } from '../../../services/auth.service';
+import { UserDataService } from '../../../services/user-data.service';
 
 @Component({
   selector: 'app-chapter-page',
@@ -24,7 +26,9 @@ export class ChapterPage implements OnInit {
   constructor(
     private route: ActivatedRoute,
     private router: Router,
-    private libraryService: LibraryService
+    private libraryService: LibraryService,
+    private authService: AuthService,
+    private userDataService: UserDataService
   ) { }
 
   ngOnInit(): void {
@@ -37,6 +41,13 @@ export class ChapterPage implements OnInit {
       } else {
         this.error = 'Missing series or chapter ID.';
         this.loading = false;
+      }
+    });
+
+    // Handle fragment to scroll to specific comment
+    this.route.fragment.subscribe(fragment => {
+      if (fragment) {
+        this.scrollToComment(fragment);
       }
     });
   }
@@ -58,6 +69,9 @@ export class ChapterPage implements OnInit {
             
             // Track the chapter view
             this.trackView(chapterId);
+            
+            // Track reading history for logged-in users
+            this.trackReadingHistory(series.series_id, chapterId);
             
             const sortedChapters = allChapters.sort((a: ChapterListItem, b: ChapterListItem) => a.chapter_number - b.chapter_number);
             const currentIndex = sortedChapters.findIndex(c => c.chapter_id === chapter.chapter_id);
@@ -100,5 +114,41 @@ export class ChapterPage implements OnInit {
         // Don't show error to user, view tracking is not critical
       }
     });
+  }
+
+  trackReadingHistory(seriesId: string, chapterId: string): void {
+    const currentUser = this.authService.getCurrentUser();
+    if (!currentUser) {
+      // User not logged in, skip tracking
+      return;
+    }
+
+    this.userDataService.updateReadingHistory({
+      series: seriesId,
+      chapter: chapterId
+    }).subscribe({
+      next: (response) => {
+        console.log('Reading history updated:', response);
+      },
+      error: (err) => {
+        console.error('Error tracking reading history:', err);
+        // Don't show error to user, history tracking is not critical
+      }
+    });
+  }
+
+  scrollToComment(commentId: string): void {
+    // Wait for the view to be fully rendered, including comments
+    setTimeout(() => {
+      const element = document.getElementById('comment-' + commentId);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // Add a highlight effect
+        element.classList.add('highlight');
+        setTimeout(() => {
+          element.classList.remove('highlight');
+        }, 2000);
+      }
+    }, 500);
   }
 }

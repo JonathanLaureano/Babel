@@ -1,0 +1,47 @@
+<div class="comments-tab">
+  <div *ngIf="loading" class="loading">Loading your comments...</div>
+  
+  <div *ngIf="error" class="error-message">{{ error }}</div>
+
+  <div *ngIf="!loading && comments.length === 0" class="empty-state">
+    <p>You haven't made any comments yet.</p>
+  </div>
+
+  <div *ngIf="!loading && comments.length > 0" class="comments-list">
+    <div *ngFor="let comment of comments" 
+         class="comment-card clickable" 
+         (click)="navigateToComment(comment)">
+      <div class="comment-header">
+        <div class="comment-context">
+          <span *ngIf="comment.series_title" class="context-link" (click)="navigateToSeries(comment.series_id); $event.stopPropagation()">
+            {{ comment.series_title }}
+          </span>
+          <span *ngIf="comment.series_title && comment.chapter_title" class="separator">•</span>
+          <span *ngIf="comment.chapter_title" class="chapter-info">
+            Chapter {{ comment.chapter_title }}
+          </span>
+        </div>
+        <span class="comment-date">{{ comment.created_at | date:'short' }}</span>
+      </div>
+
+      <div class="comment-text">
+        {{ comment.text }}
+      </div>
+
+      <div class="comment-stats">
+        <span class="stat-item">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+          </svg>
+          {{ comment.like_count }} {{ comment.like_count === 1 ? 'like' : 'likes' }}
+        </span>
+        <span class="stat-item" *ngIf="comment.reply_count !== undefined && comment.reply_count > 0">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          </svg>
+          {{ comment.reply_count }} {{ comment.reply_count === 1 ? 'reply' : 'replies' }}
+        </span>
+      </div>
+    </div>
+  </div>
+</div>

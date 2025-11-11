@@ -3,8 +3,11 @@ from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
-from .models import Role, Permission, RolePermission, User
-from .serializers import RoleSerializer, PermissionSerializer, RolePermissionSerializer, UserSerializer
+from .models import Role, Permission, RolePermission, User, Bookmark, ReadingHistory
+from .serializers import (
+    RoleSerializer, PermissionSerializer, RolePermissionSerializer, 
+    UserSerializer, BookmarkSerializer, ReadingHistorySerializer
+)
 
 
 @api_view(['POST'])
@@ -219,3 +222,79 @@ class RolePermissionViewSet(viewsets.ModelViewSet):
     queryset = RolePermission.objects.all()
     serializer_class = RolePermissionSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+
+class BookmarkViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for managing user bookmarks.
+    """
+    serializer_class = BookmarkSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    lookup_field = 'bookmark_id'
+
+    def get_queryset(self):
+        """Return bookmarks filtered by query parameters."""
+        queryset = Bookmark.objects.select_related('user', 'series').all()
+        
+        # Filter by user if specified in query params
+        user_id = self.request.query_params.get('user', None)
+        if user_id:
+            queryset = queryset.filter(user__user_id=user_id)
+        
+        # Filter by series if specified in query params
+        series_id = self.request.query_params.get('series', None)
+        if series_id:
+            queryset = queryset.filter(series__series_id=series_id)
+        
+        return queryset
+
+    def perform_create(self, serializer):
+        """Automatically set the user to the current authenticated user."""
+        serializer.save(user=self.request.user)
+
+    def destroy(self, request, *args, **kwargs):
+        """Allow users to delete their own bookmarks."""
+        instance = self.get_object()
+        if instance.user != request.user and not request.user.is_staff:
+            return Response(
+                {'detail': 'You do not have permission to delete this bookmark.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        return super().destroy(request, *args, **kwargs)
+
+
+class ReadingHistoryViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for managing reading history.
+    """
+    serializer_class = ReadingHistorySerializer
+    permission_classes = [permissions.IsAuthenticated]
+    lookup_field = 'history_id'
+    http_method_names = ['get', 'post', 'head', 'options']  # Only allow GET and POST
+
+    def get_queryset(self):
+        """Return reading history filtered by query parameters."""
+        queryset = ReadingHistory.objects.select_related(
+            'user', 'series', 'chapter'
+        ).all()
+        
+        # Filter by user if specified in query params
+        user_id = self.request.query_params.get('user', None)
+        if user_id:
+            queryset = queryset.filter(user__user_id=user_id)
+        
+        # Filter by series if specified in query params
+        series_id = self.request.query_params.get('series', None)
+        if series_id:
+            queryset = queryset.filter(series__series_id=series_id)
+        
+        # Support ordering
+        ordering = self.request.query_params.get('ordering', '-last_read_at')
+        if ordering:
+            queryset = queryset.order_by(ordering)
+        
+        return queryset
+
+    def perform_create(self, serializer):
+        """Automatically set the user to the current authenticated user."""
+        serializer.save(user=self.request.user)

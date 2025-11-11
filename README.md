@@ -1,6 +1,15 @@
 # Babel
 An app for reading machine translated novels. A python django backend and an angular typescript front end.
 
+## Features
+
+- **Translation System**: Automated translation of Korean novels to English using Google Gemini
+- **Prompt Dictionary**: Ensures consistent translation of character names, organizations, and recurring terms across all chapters
+- **Library Management**: Organize and browse translated series
+- **Chapter Reading**: Clean reading interface for translated content
+- **User Comments**: Comment system for community engagement
+- **Series Ratings**: Rate and review series
+
 ## Setup
 
 ### Backend Setup
@@ -35,8 +44,6 @@ An app for reading machine translated novels. A python django backend and an ang
    ```sh
    python manage.py runserver
    ```
-
-
 
 ### Frontend Setup
 

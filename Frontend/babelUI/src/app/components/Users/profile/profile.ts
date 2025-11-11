@@ -1,25 +1,25 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../../services/auth.service';
 import { UserService } from '../../../services/user.service';
 import { User } from '../../../models/user';
+import { ProfileInfoTab } from './profile-info/profile-info-tab';
+import { CommentsTab } from './comments/comments-tab';
+import { BookmarksTab } from './bookmarks/bookmarks-tab';
+
+type TabType = 'info' | 'comments' | 'bookmarks';
 
 @Component({
   selector: 'app-profile',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, ProfileInfoTab, CommentsTab, BookmarksTab],
   templateUrl: './profile.html',
   styleUrl: './profile.css',
   standalone: true,
 })
 export class Profile implements OnInit {
   user: User | null = null;
-  isEditing = false;
-  editData = {
-    username: '',
-    email: ''
-  };
+  activeTab: TabType = 'info';
   error: string | null = null;
   success: string | null = null;
   loading = false;
@@ -36,40 +36,29 @@ export class Profile implements OnInit {
       this.router.navigate(['/login']);
       return;
     }
-    this.editData = {
-      username: this.user.username,
-      email: this.user.email
-    };
   }
 
-  toggleEdit(): void {
-    this.isEditing = !this.isEditing;
+  switchTab(tab: TabType): void {
+    this.activeTab = tab;
     this.error = null;
     this.success = null;
-    if (!this.isEditing && this.user) {
-      this.editData = {
-        username: this.user.username,
-        email: this.user.email
-      };
-    }
   }
 
-  updateProfile(): void {
+  updateProfile(editData: { username: string; email: string }): void {
     if (!this.user) {
       return;
     }
 
     // Validate changes
-    if (!this.editData.username || !this.editData.email) {
+    if (!editData.username || !editData.email) {
       this.error = 'Username and email are required';
       return;
     }
 
     // Check if anything actually changed
-    if (this.editData.username === this.user.username && 
-        this.editData.email === this.user.email) {
+    if (editData.username === this.user.username && 
+        editData.email === this.user.email) {
       this.success = 'No changes to save';
-      this.isEditing = false;
       return;
     }
 
@@ -77,13 +66,11 @@ export class Profile implements OnInit {
     this.error = null;
     this.success = null;
 
-    this.userService.updateUser(this.user.user_id, this.editData).subscribe({
+    this.userService.updateUser(this.user.user_id, editData).subscribe({
       next: (updatedUser: User) => {
         this.user = updatedUser;
-        // Use the AuthService to update the current user, ensuring the observable is updated
         this.authService.updateCurrentUser(updatedUser);
         this.success = 'Profile updated successfully!';
-        this.isEditing = false;
         this.loading = false;
       },
       error: (err: any) => {
@@ -99,16 +86,11 @@ export class Profile implements OnInit {
       return;
     }
 
-    if (!confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
-      return;
-    }
-
     this.loading = true;
     this.error = null;
 
     this.userService.deleteUser(this.user.user_id).subscribe({
       next: () => {
-        // Logout and redirect
         this.authService.logout();
         this.router.navigate(['/']);
       },

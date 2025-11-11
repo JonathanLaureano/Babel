@@ -32,6 +32,11 @@ class Series(models.Model):
     cover_image_url = models.URLField(max_length=2048, blank=True, null=True)
     status = models.CharField(max_length=50, choices=STATUS_CHOICES, default='Ongoing')
     genres = models.ManyToManyField(Genre, through='SeriesGenre', related_name='series')
+    prompt_dictionary = models.JSONField(
+        blank=True,
+        null=True,
+        help_text="Dictionary of terms for consistent translation (e.g., character names, organizations)"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

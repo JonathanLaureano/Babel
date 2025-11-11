@@ -26,19 +26,74 @@ class CommentSerializer(serializers.ModelSerializer):
     object_id = serializers.UUIDField(write_only=True, required=False)
     content_type_display = serializers.SerializerMethodField(read_only=True)
     
+    # Additional fields for navigation context
+    series_id = serializers.SerializerMethodField(read_only=True)
+    series_title = serializers.SerializerMethodField(read_only=True)
+    chapter_id = serializers.SerializerMethodField(read_only=True)
+    chapter_title = serializers.SerializerMethodField(read_only=True)
+    
     class Meta:
         model = Comment
         fields = [
             'comment_id', 'user', 'user_username', 'text', 
             'content_type', 'object_id', 'content_type_display',
             'parent_comment', 'like_count', 'reply_count', 
-            'is_liked_by_user', 'replies', 'created_at', 'updated_at'
+            'is_liked_by_user', 'replies', 'created_at', 'updated_at',
+            'series_id', 'series_title', 'chapter_id', 'chapter_title'
         ]
         read_only_fields = ['comment_id', 'user', 'like_count', 'reply_count', 'created_at', 'updated_at']
     
     def get_content_type_display(self, obj):
         """Return a human-readable content type."""
         return obj.content_type.model
+    
+    def get_series_id(self, obj):
+        """Get the series ID from the content object."""
+        if obj.content_type.model == 'series':
+            return str(obj.object_id)
+        elif obj.content_type.model == 'chapter':
+            try:
+                from library.models import Chapter
+                chapter = Chapter.objects.get(chapter_id=obj.object_id)
+                return str(chapter.series.series_id)
+            except:
+                return None
+        return None
+    
+    def get_series_title(self, obj):
+        """Get the series title from the content object."""
+        if obj.content_type.model == 'series':
+            try:
+                from library.models import Series
+                series = Series.objects.get(series_id=obj.object_id)
+                return series.title
+            except:
+                return None
+        elif obj.content_type.model == 'chapter':
+            try:
+                from library.models import Chapter
+                chapter = Chapter.objects.get(chapter_id=obj.object_id)
+                return chapter.series.title
+            except:
+                return None
+        return None
+    
+    def get_chapter_id(self, obj):
+        """Get the chapter ID if the comment is on a chapter."""
+        if obj.content_type.model == 'chapter':
+            return str(obj.object_id)
+        return None
+    
+    def get_chapter_title(self, obj):
+        """Get the chapter number if the comment is on a chapter."""
+        if obj.content_type.model == 'chapter':
+            try:
+                from library.models import Chapter
+                chapter = Chapter.objects.get(chapter_id=obj.object_id)
+                return str(chapter.chapter_number)
+            except:
+                return None
+        return None
     
     def get_is_liked_by_user(self, obj):
         """Check if the current user has liked this comment."""

@@ -11,6 +11,7 @@ export interface Series {
   chapters_count: number;
   average_rating: number;
   total_view_count: number;
+  prompt_dictionary?: Record<string, string>;
   created_at: string;
   updated_at: string;
 }

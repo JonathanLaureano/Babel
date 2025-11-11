@@ -1,0 +1,228 @@
+.prompt-dictionary-editor {
+  margin: 20px 0;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #dee2e6;
+}
+
+.dictionary-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.dictionary-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: #333;
+}
+
+.optional {
+  font-size: 0.9rem;
+  color: #6c757d;
+  font-weight: normal;
+}
+
+.btn-help {
+  padding: 8px 16px;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background 0.2s;
+}
+
+.btn-help:hover {
+  background: #0056b3;
+}
+
+.help-section {
+  background: #e7f3ff;
+  padding: 15px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  border-left: 4px solid #007bff;
+}
+
+.help-section p {
+  margin: 10px 0;
+}
+
+.help-section ul {
+  margin: 10px 0 10px 20px;
+}
+
+.help-section li {
+  margin: 5px 0;
+}
+
+.help-actions {
+  margin-top: 15px;
+}
+
+.btn-example {
+  padding: 6px 12px;
+  background: #28a745;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.btn-example:hover {
+  background: #218838;
+}
+
+.dictionary-entries {
+  background: white;
+  padding: 15px;
+  border-radius: 6px;
+  margin-bottom: 15px;
+}
+
+.entry-header {
+  display: grid;
+  grid-template-columns: 1fr 1fr 80px;
+  gap: 10px;
+  padding: 10px;
+  background: #f1f3f5;
+  border-radius: 4px;
+  margin-bottom: 10px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #495057;
+}
+
+.entry-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 80px;
+  gap: 10px;
+  margin-bottom: 10px;
+  align-items: center;
+}
+
+.input-korean,
+.input-english {
+  padding: 10px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  transition: border-color 0.2s;
+}
+
+.input-korean:focus,
+.input-english:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.btn-remove {
+  padding: 8px 12px;
+  background: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background 0.2s;
+}
+
+.btn-remove:hover:not(:disabled) {
+  background: #c82333;
+}
+
+.btn-remove:disabled {
+  background: #e9ecef;
+  color: #adb5bd;
+  cursor: not-allowed;
+}
+
+.dictionary-actions {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.btn-add,
+.btn-clear {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: all 0.2s;
+}
+
+.btn-add {
+  background: #28a745;
+  color: white;
+}
+
+.btn-add:hover {
+  background: #218838;
+}
+
+.btn-clear {
+  background: #6c757d;
+  color: white;
+}
+
+.btn-clear:hover:not(:disabled) {
+  background: #545b62;
+}
+
+.btn-clear:disabled {
+  background: #e9ecef;
+  color: #adb5bd;
+  cursor: not-allowed;
+}
+
+.dictionary-info {
+  padding: 12px;
+  background: #fff3cd;
+  border-left: 4px solid #ffc107;
+  border-radius: 4px;
+}
+
+.dictionary-info small {
+  color: #856404;
+  line-height: 1.5;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .entry-header,
+  .entry-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .col-actions {
+    display: none;
+  }
+
+  .btn-remove {
+    width: 100%;
+  }
+
+  .dictionary-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .dictionary-actions {
+    flex-direction: column;
+  }
+
+  .btn-add,
+  .btn-clear {
+    width: 100%;
+  }
+}

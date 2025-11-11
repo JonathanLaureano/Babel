@@ -91,3 +91,44 @@ class User(AbstractBaseUser, PermissionsMixin):
     def id(self):
         """Return user_id as id for compatibility with libraries expecting 'id' attribute"""
         return self.user_id
+
+
+class Bookmark(models.Model):
+    """Stores user bookmarks for series."""
+    bookmark_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey('User', on_delete=models.CASCADE, related_name='bookmarks')
+    series = models.ForeignKey('library.Series', on_delete=models.CASCADE, related_name='bookmarked_by')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'bookmark'
+        unique_together = ('user', 'series')
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['user', 'series']),
+        ]
+
+    def __str__(self):
+        return f"{self.user.username} bookmarked {self.series.title}"
+
+
+class ReadingHistory(models.Model):
+    """Tracks the last read chapter for each user per series."""
+    history_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey('User', on_delete=models.CASCADE, related_name='reading_history')
+    series = models.ForeignKey('library.Series', on_delete=models.CASCADE, related_name='read_by')
+    chapter = models.ForeignKey('library.Chapter', on_delete=models.CASCADE, related_name='reading_records')
+    last_read_at = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'readinghistory'
+        unique_together = ('user', 'series')
+        ordering = ['-last_read_at']
+        indexes = [
+            models.Index(fields=['user', 'series']),
+            models.Index(fields=['user', '-last_read_at']),
+        ]
+
+    def __str__(self):
+        return f"{self.user.username} last read {self.series.title} - Chapter {self.chapter.chapter_number}"

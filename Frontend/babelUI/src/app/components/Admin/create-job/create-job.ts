@@ -4,10 +4,11 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { TranslatorService } from '../../../services/translator.service';
 import { CreateTranslationJobRequest } from '../../../models/translator';
+import { PromptDictionaryEditor } from '../../Shared/prompt-dictionary-editor/prompt-dictionary-editor';
 
 @Component({
   selector: 'app-create-job',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, PromptDictionaryEditor],
   templateUrl: './create-job.html',
   styleUrl: './create-job.css',
   standalone: true,
@@ -16,6 +17,7 @@ export class CreateJob {
   novelUrl = '';
   chaptersRequested = 5;
   translateAll = false;
+  promptDictionary: Record<string, string> | null = null;
   isSubmitting = false;
   errorMessage = '';
 
@@ -42,7 +44,8 @@ export class CreateJob {
       novel_url: this.novelUrl,
       ...(this.translateAll
         ? { translate_all: true }
-        : { chapters_requested: this.chaptersRequested })
+        : { chapters_requested: this.chaptersRequested }),
+      ...(this.promptDictionary && { prompt_dictionary: this.promptDictionary })
     };
 
     this.translatorService.createJob(request).subscribe({
@@ -59,5 +62,9 @@ export class CreateJob {
 
   cancel(): void {
     this.router.navigate(['/staff/translator']);
+  }
+
+  onDictionaryChange(dictionary: Record<string, string> | null): void {
+    this.promptDictionary = dictionary;
   }
 }

@@ -206,6 +206,37 @@ class CommentViewSet(viewsets.ModelViewSet):
         
         serializer = CommentReplySerializer(replies, many=True, context={'request': request})
         return Response(serializer.data)
+    
+    @action(detail=False, methods=['get'])
+    def by_user(self, request):
+        """
+        Get all comments by a specific user.
+        Query params: user (user_id)
+        """
+        user_id = request.query_params.get('user')
+        
+        if not user_id:
+            return Response(
+                {'error': 'user parameter is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Filter comments by user
+        comments = self.queryset.filter(user__user_id=user_id)
+        
+        # Apply ordering if specified in query params
+        ordering = request.query_params.get('ordering', '-created_at')
+        if ordering:
+            comments = comments.order_by(ordering)
+        
+        # Apply pagination
+        page = self.paginate_queryset(comments)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+        
+        serializer = self.get_serializer(comments, many=True)
+        return Response(serializer.data)
 
 
 class CommentLikeViewSet(viewsets.ReadOnlyModelViewSet):

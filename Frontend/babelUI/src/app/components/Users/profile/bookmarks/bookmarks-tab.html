@@ -1,0 +1,67 @@
+<div class="bookmarks-tab">
+  <div *ngIf="loading" class="loading">Loading your bookmarks...</div>
+  
+  <div *ngIf="error" class="error-message">{{ error }}</div>
+
+  <div *ngIf="!loading && bookmarks.length === 0" class="empty-state">
+    <p>You haven't bookmarked any series yet.</p>
+    <p class="empty-hint">Bookmark series to keep track of your favorites!</p>
+  </div>
+
+  <div *ngIf="!loading && bookmarks.length > 0" class="bookmarks-grid">
+    <div *ngFor="let bookmark of bookmarks" class="bookmark-card">
+      <div 
+        class="series-cover"
+        [style.background-image]="bookmark.series_details?.cover_image_url ? 'url(' + bookmark.series_details?.cover_image_url + ')' : 'none'"
+        [class.no-cover]="!bookmark.series_details?.cover_image_url"
+        (click)="navigateToSeries(bookmark.series)"
+      >
+        <div *ngIf="!bookmark.series_details?.cover_image_url" class="no-cover-text">
+          {{ bookmark.series_details?.title?.charAt(0) || '?' }}
+        </div>
+      </div>
+
+      <div class="bookmark-info">
+        <h3 class="series-title" (click)="navigateToSeries(bookmark.series)">
+          {{ bookmark.series_details?.title || 'Unknown Series' }}
+        </h3>
+        
+        <p *ngIf="bookmark.series_details?.author" class="series-author">
+          by {{ bookmark.series_details?.author }}
+        </p>
+
+        <div *ngIf="bookmark.lastReadChapter" class="reading-progress">
+          <span class="progress-label">Last read:</span>
+          <span class="progress-text">Chapter {{ bookmark.lastReadChapter.chapter_number }}</span>
+          <span *ngIf="bookmark.lastReadChapter.chapter_title" class="chapter-title">
+            - {{ bookmark.lastReadChapter.chapter_title }}
+          </span>
+        </div>
+
+        <div class="bookmark-actions">
+          <button 
+            class="resume-button" 
+            (click)="resumeReading(bookmark)"
+            [title]="bookmark.lastReadChapter ? 'Continue reading' : 'Start reading'"
+          >
+            {{ bookmark.lastReadChapter ? 'Continue Reading' : 'Start Reading' }}
+          </button>
+          <button 
+            class="view-button" 
+            (click)="navigateToSeries(bookmark.series)"
+            title="View series details"
+          >
+            View Series
+          </button>
+          <button 
+            class="remove-button" 
+            (click)="removeBookmark(bookmark.bookmark_id)"
+            title="Remove bookmark"
+          >
+            Remove
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

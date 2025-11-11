@@ -3,8 +3,10 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { LibraryService } from '../../../services/library.service';
 import { AuthService } from '../../../services/auth.service';
+import { UserDataService } from '../../../services/user-data.service';
 import { Series } from '../../../models/series';
 import { ChapterListItem } from '../../../models/chapter';
+import { Bookmark } from '../../../models/user-data';
 import { StarRatingComponent } from '../star-rating/star-rating';
 import { RatingSubmitComponent } from '../rating-submit/rating-submit';
 import { CommentsComponent } from '../../Users/comments/comments';
@@ -22,11 +24,14 @@ export class SeriesPage implements OnInit {
   loading = true;
   error: string | null = null;
   isLoggedIn = false;
+  currentBookmark: Bookmark | null = null;
+  bookmarkLoading = false;
 
   constructor(
     private route: ActivatedRoute,
     private libraryService: LibraryService,
-    private authService: AuthService
+    private authService: AuthService,
+    private userDataService: UserDataService
   ) {}
 
   ngOnInit(): void {
@@ -55,6 +60,11 @@ export class SeriesPage implements OnInit {
         
         // Track the view
         this.trackView(seriesData.series_id);
+        
+        // Check bookmark status if logged in
+        if (this.isLoggedIn) {
+          this.checkBookmarkStatus(seriesData.series_id);
+        }
         
         // Then fetch chapters for this series
         this.libraryService.getSeriesChapters(seriesData.series_id).subscribe({
@@ -103,6 +113,60 @@ export class SeriesPage implements OnInit {
         },
         error: (err) => {
           console.error('Error reloading series:', err);
+        }
+      });
+    }
+  }
+
+  checkBookmarkStatus(seriesId: string): void {
+    const user = this.authService.getCurrentUser();
+    if (!user) return;
+
+    this.userDataService.checkBookmarkExists(user.user_id, seriesId).subscribe({
+      next: (bookmark) => {
+        this.currentBookmark = bookmark;
+      },
+      error: (err) => {
+        console.error('Error checking bookmark status:', err);
+      }
+    });
+  }
+
+  toggleBookmark(): void {
+    if (!this.series || this.bookmarkLoading) return;
+
+    const user = this.authService.getCurrentUser();
+    if (!user) {
+      alert('Please log in to bookmark this series.');
+      return;
+    }
+
+    this.bookmarkLoading = true;
+
+    if (this.currentBookmark) {
+      // Remove bookmark
+      this.userDataService.deleteBookmark(this.currentBookmark.bookmark_id).subscribe({
+        next: () => {
+          this.currentBookmark = null;
+          this.bookmarkLoading = false;
+        },
+        error: (err) => {
+          console.error('Error removing bookmark:', err);
+          alert('Failed to remove bookmark. Please try again.');
+          this.bookmarkLoading = false;
+        }
+      });
+    } else {
+      // Add bookmark
+      this.userDataService.createBookmark({ series: this.series.series_id }).subscribe({
+        next: (bookmark) => {
+          this.currentBookmark = bookmark;
+          this.bookmarkLoading = false;
+        },
+        error: (err) => {
+          console.error('Error adding bookmark:', err);
+          alert('Failed to add bookmark. Please try again.');
+          this.bookmarkLoading = false;
         }
       });
     }

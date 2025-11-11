@@ -51,6 +51,11 @@
         <small class="help-text">How many chapters to translate (1-100). Start with 1-2 for testing.</small>
       </div>
 
+      <app-prompt-dictionary-editor
+        [dictionary]="promptDictionary"
+        (dictionaryChange)="onDictionaryChange($event)"
+      ></app-prompt-dictionary-editor>
+
       <div class="info-box">
         <h4>ℹ️ Important Notes:</h4>
         <ul>

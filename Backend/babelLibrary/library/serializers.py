@@ -66,7 +66,7 @@ class SeriesSerializer(serializers.ModelSerializer):
         fields = [
             'series_id', 'title', 'author', 'description', 'cover_image_url', 
             'status', 'genres', 'genre_ids', 'chapters_count', 'average_rating',
-            'total_view_count', 'created_at', 'updated_at'
+            'total_view_count', 'prompt_dictionary', 'created_at', 'updated_at'
         ]
         read_only_fields = ['series_id', 'average_rating', 'total_view_count', 'created_at', 'updated_at']
 
