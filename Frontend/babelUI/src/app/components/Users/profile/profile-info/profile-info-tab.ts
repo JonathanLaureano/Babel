@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { User } from '../../../../models/user';
@@ -10,7 +10,7 @@ import { User } from '../../../../models/user';
   styleUrl: './profile-info-tab.css',
   standalone: true,
 })
-export class ProfileInfoTab {
+export class ProfileInfoTab implements OnChanges {
   @Input() user: User | null = null;
   @Input() loading = false;
   @Input() error: string | null = null;

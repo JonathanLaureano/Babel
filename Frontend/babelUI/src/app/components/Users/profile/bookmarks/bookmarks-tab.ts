@@ -1,4 +1,4 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input, OnInit, OnChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { Bookmark, ReadingHistory } from '../../../../models/user-data';
@@ -15,7 +15,7 @@ interface BookmarkWithHistory extends Bookmark {
   styleUrl: './bookmarks-tab.css',
   standalone: true,
 })
-export class BookmarksTab implements OnInit {
+export class BookmarksTab implements OnInit, OnChanges {
   @Input() userId: string | null = null;
   
   bookmarks: BookmarkWithHistory[] = [];

@@ -56,7 +56,7 @@ class CommentSerializer(serializers.ModelSerializer):
                 from library.models import Chapter
                 chapter = Chapter.objects.get(chapter_id=obj.object_id)
                 return str(chapter.series.series_id)
-            except:
+            except Exception:
                 return None
         return None
     
@@ -67,14 +67,14 @@ class CommentSerializer(serializers.ModelSerializer):
                 from library.models import Series
                 series = Series.objects.get(series_id=obj.object_id)
                 return series.title
-            except:
+            except Exception:
                 return None
         elif obj.content_type.model == 'chapter':
             try:
                 from library.models import Chapter
                 chapter = Chapter.objects.get(chapter_id=obj.object_id)
                 return chapter.series.title
-            except:
+            except Exception:
                 return None
         return None
     
@@ -91,7 +91,7 @@ class CommentSerializer(serializers.ModelSerializer):
                 from library.models import Chapter
                 chapter = Chapter.objects.get(chapter_id=obj.object_id)
                 return str(chapter.chapter_number)
-            except:
+            except Exception:
                 return None
         return None
     

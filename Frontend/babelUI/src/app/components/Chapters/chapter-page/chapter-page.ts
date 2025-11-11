@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, AfterViewChecked } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { LibraryService } from '../../../services/library.service';
@@ -16,12 +16,14 @@ import { UserDataService } from '../../../services/user-data.service';
   styleUrl: './chapter-page.css',
   standalone: true,
 })
-export class ChapterPage implements OnInit {
+export class ChapterPage implements OnInit, AfterViewChecked {
   chapter: Chapter | null = null;
   prevChapter: ChapterListItem | null = null;
   nextChapter: ChapterListItem | null = null;
   loading = true;
   error: string | null = null;
+  private pendingCommentId: string | null = null;
+  private hasScrolledToComment = false;
 
   constructor(
     private route: ActivatedRoute,
@@ -47,9 +49,17 @@ export class ChapterPage implements OnInit {
     // Handle fragment to scroll to specific comment
     this.route.fragment.subscribe(fragment => {
       if (fragment) {
-        this.scrollToComment(fragment);
+        this.pendingCommentId = fragment;
+        this.hasScrolledToComment = false;
       }
     });
+  }
+
+  ngAfterViewChecked(): void {
+    // Attempt to scroll to comment after view has been checked and rendered
+    if (this.pendingCommentId && !this.hasScrolledToComment && !this.loading) {
+      this.scrollToComment(this.pendingCommentId);
+    }
   }
 
   loadChapterData(id: string, chapterId: string): void {
@@ -103,14 +113,12 @@ export class ChapterPage implements OnInit {
   trackView(chapterId: string): void {
     this.libraryService.trackChapterView(chapterId).subscribe({
       next: (response) => {
-        console.log('Chapter view tracked:', response);
-        // Optionally update the view count in the UI
+        // Update the view count in the UI
         if (this.chapter && response.view_count !== undefined) {
           this.chapter.view_count = response.view_count;
         }
       },
-      error: (err) => {
-        console.error('Error tracking chapter view:', err);
+      error: () => {
         // Don't show error to user, view tracking is not critical
       }
     });
@@ -127,28 +135,30 @@ export class ChapterPage implements OnInit {
       series: seriesId,
       chapter: chapterId
     }).subscribe({
-      next: (response) => {
-        console.log('Reading history updated:', response);
+      next: () => {
+        // Reading history updated successfully
       },
-      error: (err) => {
-        console.error('Error tracking reading history:', err);
+      error: () => {
         // Don't show error to user, history tracking is not critical
       }
     });
   }
 
   scrollToComment(commentId: string): void {
-    // Wait for the view to be fully rendered, including comments
-    setTimeout(() => {
-      const element = document.getElementById('comment-' + commentId);
-      if (element) {
+    const element = document.getElementById('comment-' + commentId);
+    if (element) {
+      this.hasScrolledToComment = true;
+      this.pendingCommentId = null;
+      
+      // Use requestAnimationFrame to ensure DOM is fully rendered
+      requestAnimationFrame(() => {
         element.scrollIntoView({ behavior: 'smooth', block: 'center' });
         // Add a highlight effect
         element.classList.add('highlight');
         setTimeout(() => {
           element.classList.remove('highlight');
         }, 2000);
-      }
-    }, 500);
+      });
+    }
   }
 }

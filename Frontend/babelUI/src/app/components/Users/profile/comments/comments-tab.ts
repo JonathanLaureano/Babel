@@ -1,4 +1,4 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input, OnInit, OnChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { UserComment } from '../../../../models/user-data';
@@ -11,7 +11,7 @@ import { UserDataService } from '../../../../services/user-data.service';
   styleUrl: './comments-tab.css',
   standalone: true,
 })
-export class CommentsTab implements OnInit {
+export class CommentsTab implements OnInit, OnChanges {
   @Input() userId: string | null = null;
   
   comments: UserComment[] = [];
@@ -61,29 +61,15 @@ export class CommentsTab implements OnInit {
   }
 
   navigateToComment(comment: UserComment): void {
-    console.log('Click detected! Navigating to comment:', comment);
-    console.log('Comment has series_id:', comment.series_id);
-    console.log('Comment has chapter_id:', comment.chapter_id);
-    console.log('Comment has comment_id:', comment.comment_id);
-    
     // If it's a chapter comment, navigate to the chapter with the comment ID as a fragment
     if (comment.series_id && comment.chapter_id) {
-      const path = ['/series', comment.series_id, 'chapter', comment.chapter_id];
-      console.log('Navigating to chapter with path:', path, 'and fragment:', comment.comment_id);
-      this.router.navigate(path, { fragment: comment.comment_id }).then(
-        success => console.log('Navigation success:', success),
-        error => console.error('Navigation error:', error)
+      this.router.navigate(
+        ['/series', comment.series_id, 'chapter', comment.chapter_id],
+        { fragment: comment.comment_id }
       );
     } else if (comment.series_id) {
       // If it's only a series comment, just navigate to the series
-      const path = ['/series', comment.series_id];
-      console.log('Navigating to series with path:', path);
-      this.router.navigate(path).then(
-        success => console.log('Navigation success:', success),
-        error => console.error('Navigation error:', error)
-      );
-    } else {
-      console.warn('Cannot navigate - missing series_id');
+      this.router.navigate(['/series', comment.series_id]);
     }
   }
 }

@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, OnChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
@@ -14,7 +14,7 @@ interface DictionaryEntry {
   templateUrl: './prompt-dictionary-editor.html',
   styleUrls: ['./prompt-dictionary-editor.css']
 })
-export class PromptDictionaryEditor implements OnInit {
+export class PromptDictionaryEditor implements OnInit, OnChanges {
   @Input() dictionary: Record<string, string> | null | undefined = null;
   @Output() dictionaryChange = new EventEmitter<Record<string, string> | null>();
   
