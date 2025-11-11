@@ -134,7 +134,8 @@ class TranslationJobViewSet(viewsets.ModelViewSet):
                 # Handle genre(s) - split by comma if multiple genres
                 if job.english_genre:
                     # Split by comma and strip whitespace from each genre
-                    genre_names = [name.strip() for name in job.english_genre.split(',') if name.strip()]
+                    # Using walrus operator to avoid calling strip() twice per genre
+                    genre_names = [stripped for name in job.english_genre.split(',') if (stripped := name.strip())]
                     
                     for genre_name in genre_names:
                         genre, created = Genre.objects.get_or_create(

@@ -52,33 +52,18 @@ export class Genres implements OnInit {
     this.loading = true;
     this.error = null;
 
-    if (this.selectedGenres.length === 0) {
-      // If no genres selected, show all series
-      this.libraryService.getSeries().subscribe({
-        next: (data: Series[]) => {
-          this.series = data;
-          this.loading = false;
-        },
-        error: (err: any) => {
-          console.error('Error loading series:', err);
-          this.error = 'Failed to load series.';
-          this.loading = false;
-        }
-      });
-    } else {
-      // Filter by selected genres
-      this.libraryService.getSeriesByGenres(this.selectedGenres).subscribe({
-        next: (data: Series[]) => {
-          this.series = data;
-          this.loading = false;
-        },
-        error: (err: any) => {
-          console.error('Error loading series by genres:', err);
-          this.error = 'Failed to load series.';
-          this.loading = false;
-        }
-      });
-    }
+    // Use consolidated getSeries method with optional genre filtering
+    this.libraryService.getSeries(undefined, this.selectedGenres.length > 0 ? this.selectedGenres : undefined).subscribe({
+      next: (data: Series[]) => {
+        this.series = data;
+        this.loading = false;
+      },
+      error: (err: any) => {
+        console.error('Error loading series:', err);
+        this.error = 'Failed to load series.';
+        this.loading = false;
+      }
+    });
   }
 
   isGenreSelected(genreId: string): boolean {
