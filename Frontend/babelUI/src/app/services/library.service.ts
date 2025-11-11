@@ -23,6 +23,14 @@ export class LibraryService {
     return this.http.get<Series[]>(`${this.apiUrl}/series/`, { params });
   }
 
+  getSeriesByGenres(genreIds: string[]): Observable<Series[]> {
+    let params = new HttpParams();
+    genreIds.forEach(id => {
+      params = params.append('genre', id);
+    });
+    return this.http.get<Series[]>(`${this.apiUrl}/series/`, { params });
+  }
+
   getSeriesById(id: string): Observable<Series> {
     return this.http.get<Series>(`${this.apiUrl}/series/${id}/`);
   }

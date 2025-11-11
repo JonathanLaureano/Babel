@@ -53,10 +53,22 @@ class SeriesViewSet(ViewTrackingMixin, viewsets.ModelViewSet):
     pagination_class = None
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ['status']
+    filterset_fields = ['status', 'genres']
     search_fields = ['title', 'description']
     ordering_fields = ['created_at', 'updated_at', 'title']
     ordering = ['-created_at']
+    
+    def get_queryset(self):
+        """Override to support filtering by multiple genre IDs."""
+        queryset = super().get_queryset()
+        
+        # Handle multiple genre filtering via query params
+        genre_ids = self.request.query_params.getlist('genre')
+        if genre_ids:
+            # Filter series that have ANY of the specified genres
+            queryset = queryset.filter(genres__genre_id__in=genre_ids).distinct()
+        
+        return queryset
 
     def get_permissions(self):
         """

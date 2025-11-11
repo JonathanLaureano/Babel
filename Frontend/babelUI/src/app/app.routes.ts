@@ -4,6 +4,7 @@ import { AllSeries } from './components/Series/all-series/all-series';
 import { SeriesPage } from './components/Series/series-page/series-page';
 import { ChapterPage } from './components/Chapters/chapter-page/chapter-page';
 import { Discord } from './components/General/discord/discord';
+import { Genres } from './components/General/genres/genres';
 import { Login } from './components/Users/login/login';
 import { Register } from './components/Users/register/register';
 import { Profile } from './components/Users/profile/profile';
@@ -23,6 +24,7 @@ export const routes: Routes = [
   { path: 'series', component: AllSeries },
   { path: 'series/:id', component: SeriesPage },
   { path: 'series/:id/chapter/:chapterId', component: ChapterPage },
+  { path: 'genres', component: Genres },
   { path: 'discord', component: Discord },
   { path: 'login', component: Login },
   { path: 'register', component: Register },

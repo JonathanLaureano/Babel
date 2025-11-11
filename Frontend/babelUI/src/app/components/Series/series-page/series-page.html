@@ -45,9 +45,14 @@
         </div>
 
         <div class="genres" *ngIf="series.genres && series.genres.length > 0">
-          <span *ngFor="let genre of series.genres" class="genre-tag">
+          <a 
+            *ngFor="let genre of series.genres" 
+            [routerLink]="['/genres']" 
+            [queryParams]="{genre: genre.genre_id}"
+            class="genre-tag"
+          >
             {{ genre.name }}
-          </span>
+          </a>
         </div>
 
         <p class="description" *ngIf="series.description">

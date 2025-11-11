@@ -1,0 +1,75 @@
+<div class="genres-container">
+  <h2>Browse by Genre</h2>
+
+  <!-- Genre Filter Section -->
+  <div class="genre-filter-section">
+    <h3>Select Genres</h3>
+    <div class="genre-filters">
+      <button
+        *ngFor="let genre of allGenres"
+        class="genre-filter-button"
+        [class.selected]="isGenreSelected(genre.genre_id)"
+        (click)="toggleGenre(genre.genre_id)"
+      >
+        {{ genre.name }}
+      </button>
+    </div>
+    <button
+      *ngIf="selectedGenres.length > 0"
+      class="clear-filters-button"
+      (click)="clearGenres()"
+    >
+      Clear All Filters
+    </button>
+  </div>
+
+  <!-- Selected Genres Display -->
+  <div *ngIf="selectedGenres.length > 0" class="selected-genres">
+    <p>Showing series with genres:</p>
+    <div class="selected-genre-tags">
+      <span *ngFor="let genreId of selectedGenres" class="selected-genre-tag">
+        {{ getGenreName(genreId) }}
+      </span>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="loading" class="loading">
+    <p>Loading series...</p>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="error" class="error">
+    <p>{{ error }}</p>
+  </div>
+
+  <!-- No Series Found -->
+  <div *ngIf="!loading && !error && series.length === 0" class="no-series">
+    <p>No series found with the selected genres.</p>
+  </div>
+
+  <!-- Series Grid -->
+  <div *ngIf="!loading && !error && series.length > 0" class="series-grid">
+    <div *ngFor="let s of series" class="series-card">
+      <a [routerLink]="['/series', s.series_id]">
+        <div class="series-image" *ngIf="s.cover_image_url">
+          <img [src]="s.cover_image_url" [alt]="s.title">
+        </div>
+        <div class="series-image placeholder" *ngIf="!s.cover_image_url">
+          <span>{{ s.title.charAt(0) }}</span>
+        </div>
+        <div class="series-info">
+          <h3>{{ s.title }}</h3>
+          <p class="description" *ngIf="s.description">{{ s.description }}</p>
+          <div class="series-meta">
+            <span class="chapter-count">{{ s.chapters_count }} chapters</span>
+            <span class="status" [class]="s.status.toLowerCase()">{{ s.status }}</span>
+          </div>
+          <div class="genres" *ngIf="s.genres && s.genres.length > 0">
+            <span *ngFor="let genre of s.genres" class="genre-tag">{{ genre.name }}</span>
+          </div>
+        </div>
+      </a>
+    </div>
+  </div>
+</div>
