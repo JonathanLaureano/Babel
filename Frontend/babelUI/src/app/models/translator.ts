@@ -11,6 +11,7 @@ export interface TranslationJob {
   english_author?: string;
   english_genre?: string;
   english_description?: string;
+  prompt_dictionary?: Record<string, string>;
   chapters_requested: number;
   chapters_completed: number;
   chapters_failed: number;
@@ -44,6 +45,7 @@ export interface CreateTranslationJobRequest {
   novel_url: string;
   chapters_requested?: number;
   translate_all?: boolean;
+  prompt_dictionary?: Record<string, string>;
 }
 
 export interface TranslationJobPreview {

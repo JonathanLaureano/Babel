@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, AfterViewChecked } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { LibraryService } from '../../../services/library.service';
@@ -6,6 +6,8 @@ import { Chapter, ChapterListItem } from '../../../models/chapter';
 import { forkJoin } from 'rxjs';
 import { Series } from '../../../models/series';
 import { CommentsComponent } from '../../Users/comments/comments';
+import { AuthService } from '../../../services/auth.service';
+import { UserDataService } from '../../../services/user-data.service';
 
 @Component({
   selector: 'app-chapter-page',
@@ -14,17 +16,23 @@ import { CommentsComponent } from '../../Users/comments/comments';
   styleUrl: './chapter-page.css',
   standalone: true,
 })
-export class ChapterPage implements OnInit {
+export class ChapterPage implements OnInit, AfterViewChecked {
   chapter: Chapter | null = null;
   prevChapter: ChapterListItem | null = null;
   nextChapter: ChapterListItem | null = null;
   loading = true;
   error: string | null = null;
+  private pendingCommentId: string | null = null;
+  private hasScrolledToComment = false;
+  private scrollAttempts = 0;
+  private readonly MAX_SCROLL_ATTEMPTS = 50; // Limit retries to avoid infinite loops
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
-    private libraryService: LibraryService
+    private libraryService: LibraryService,
+    private authService: AuthService,
+    private userDataService: UserDataService
   ) { }
 
   ngOnInit(): void {
@@ -39,6 +47,31 @@ export class ChapterPage implements OnInit {
         this.loading = false;
       }
     });
+
+    // Handle fragment to scroll to specific comment
+    this.route.fragment.subscribe(fragment => {
+      if (fragment) {
+        this.pendingCommentId = fragment;
+        this.hasScrolledToComment = false;
+        this.scrollAttempts = 0;
+      }
+    });
+  }
+
+  ngAfterViewChecked(): void {
+    // Attempt to scroll to comment after view has been checked and rendered
+    // Only attempt if we have a pending comment, haven't scrolled yet, and haven't exceeded max attempts
+    if (this.pendingCommentId && !this.hasScrolledToComment && !this.loading) {
+      if (this.scrollAttempts < this.MAX_SCROLL_ATTEMPTS) {
+        this.scrollAttempts++;
+        this.scrollToComment(this.pendingCommentId);
+      } else {
+        // Give up after max attempts - comment may not exist or comments haven't loaded
+        console.warn(`Failed to scroll to comment ${this.pendingCommentId} after ${this.MAX_SCROLL_ATTEMPTS} attempts`);
+        this.pendingCommentId = null;
+        this.scrollAttempts = 0;
+      }
+    }
   }
 
   loadChapterData(id: string, chapterId: string): void {
@@ -58,6 +91,9 @@ export class ChapterPage implements OnInit {
             
             // Track the chapter view
             this.trackView(chapterId);
+            
+            // Track reading history for logged-in users
+            this.trackReadingHistory(series.series_id, chapterId);
             
             const sortedChapters = allChapters.sort((a: ChapterListItem, b: ChapterListItem) => a.chapter_number - b.chapter_number);
             const currentIndex = sortedChapters.findIndex(c => c.chapter_id === chapter.chapter_id);
@@ -89,16 +125,53 @@ export class ChapterPage implements OnInit {
   trackView(chapterId: string): void {
     this.libraryService.trackChapterView(chapterId).subscribe({
       next: (response) => {
-        console.log('Chapter view tracked:', response);
-        // Optionally update the view count in the UI
+        // Update the view count in the UI
         if (this.chapter && response.view_count !== undefined) {
           this.chapter.view_count = response.view_count;
         }
       },
-      error: (err) => {
-        console.error('Error tracking chapter view:', err);
+      error: () => {
         // Don't show error to user, view tracking is not critical
       }
     });
+  }
+
+  trackReadingHistory(seriesId: string, chapterId: string): void {
+    const currentUser = this.authService.getCurrentUser();
+    if (!currentUser) {
+      // User not logged in, skip tracking
+      return;
+    }
+
+    this.userDataService.updateReadingHistory({
+      series: seriesId,
+      chapter: chapterId
+    }).subscribe({
+      next: () => {
+        // Reading history updated successfully
+      },
+      error: () => {
+        // Don't show error to user, history tracking is not critical
+      }
+    });
+  }
+
+  scrollToComment(commentId: string): void {
+    const element = document.getElementById('comment-' + commentId);
+    if (element) {
+      this.hasScrolledToComment = true;
+      this.pendingCommentId = null;
+      this.scrollAttempts = 0;
+      
+      // Use requestAnimationFrame to ensure DOM is fully rendered
+      requestAnimationFrame(() => {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // Add a highlight effect
+        element.classList.add('highlight');
+        setTimeout(() => {
+          element.classList.remove('highlight');
+        }, 2000);
+      });
+    }
   }
 }

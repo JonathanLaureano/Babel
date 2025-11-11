@@ -1,0 +1,32 @@
+<div *ngIf="hasEntries" class="dictionary-viewer">
+  <div class="viewer-header" (click)="toggleExpanded()">
+    <h4>{{ title }} <span class="badge">{{ entries.length }} terms</span></h4>
+    <button type="button" class="toggle-btn">
+      {{ expanded ? '▼ Hide' : '▶ Show' }}
+    </button>
+  </div>
+
+  <div *ngIf="expanded" class="viewer-content">
+    <div class="dictionary-table">
+      <div class="table-header">
+        <span class="col-original">Original</span>
+        <span class="col-translation">Translation</span>
+      </div>
+      
+      <div *ngFor="let entry of entries" class="table-row">
+        <span class="col-original">{{ entry.key }}</span>
+        <span class="col-translation">{{ entry.value }}</span>
+      </div>
+    </div>
+
+    <div class="info-note">
+      <small>
+        <strong>ℹ️ Note:</strong> These terms were used to ensure consistent translation across all chapters.
+      </small>
+    </div>
+  </div>
+</div>
+
+<div *ngIf="!hasEntries" class="no-dictionary">
+  <p>No translation dictionary was used for this series.</p>
+</div>

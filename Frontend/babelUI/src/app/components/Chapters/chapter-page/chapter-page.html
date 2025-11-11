@@ -13,6 +13,26 @@
     </div>
   </div>
 
+  <div class="chapter-navigation">
+    <a
+      *ngIf="prevChapter"
+      [routerLink]="['/series', chapter.series, 'chapter', prevChapter.chapter_id]"
+      class="nav-link prev-link"
+    >
+      &larr; Previous Chapter
+    </a>
+    <div *ngIf="!prevChapter"></div>
+
+    <a
+      *ngIf="nextChapter"
+      [routerLink]="['/series', chapter.series, 'chapter', nextChapter.chapter_id]"
+      class="nav-link next-link"
+    >
+      Next Chapter &rarr;
+    </a>
+    <div *ngIf="!nextChapter"></div>
+  </div>
+
   <div class="chapter-content">
     <p>{{ chapter.content }}</p>
   </div>

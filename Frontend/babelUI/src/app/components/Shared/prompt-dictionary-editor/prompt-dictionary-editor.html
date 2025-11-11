@@ -1,0 +1,95 @@
+<div class="prompt-dictionary-editor">
+  <div class="dictionary-header">
+    <h3>Translation Dictionary <span class="optional">(Optional)</span></h3>
+    <button type="button" class="btn-help" (click)="toggleHelp()">
+      {{ showHelp ? '▼' : '▶' }} {{ showHelp ? 'Hide Help' : 'Show Help' }}
+    </button>
+  </div>
+
+  <div *ngIf="showHelp" class="help-section">
+    <p><strong>What is this?</strong></p>
+    <p>
+      The translation dictionary ensures character names, organizations, and special terms 
+      are translated consistently across all chapters.
+    </p>
+    
+    <p><strong>How to use:</strong></p>
+    <ul>
+      <li><strong>Korean/Original:</strong> Enter the term as it appears in Korean</li>
+      <li><strong>English:</strong> Enter your preferred English translation</li>
+      <li>Add as many terms as needed using the "+ Add Term" button</li>
+      <li>Leave entries blank to skip them</li>
+    </ul>
+
+    <p><strong>Examples:</strong></p>
+    <ul>
+      <li><strong>Character names:</strong> 김민준 → Kim Min-jun</li>
+      <li><strong>Organizations:</strong> 무림맹 → Murim Alliance</li>
+      <li><strong>Locations:</strong> 천산 → Heaven Mountain</li>
+      <li><strong>Special terms:</strong> 마나 → Mana</li>
+    </ul>
+
+    <div class="help-actions">
+      <button type="button" class="btn-example" (click)="loadExample()">
+        Load Example
+      </button>
+    </div>
+  </div>
+
+  <div class="dictionary-entries">
+    <div class="entry-header">
+      <span class="col-korean">Korean / Original</span>
+      <span class="col-english">English Translation</span>
+      <span class="col-actions">Actions</span>
+    </div>
+
+    <div *ngFor="let entry of entries; let i = index" class="entry-row">
+      <input
+        type="text"
+        class="input-korean"
+        [(ngModel)]="entry.key"
+        (ngModelChange)="onEntryChange()"
+        placeholder="e.g., 김민준"
+        [name]="'key-' + i"
+      />
+      <input
+        type="text"
+        class="input-english"
+        [(ngModel)]="entry.value"
+        (ngModelChange)="onEntryChange()"
+        placeholder="e.g., Kim Min-jun"
+        [name]="'value-' + i"
+      />
+      <button
+        type="button"
+        class="btn-remove"
+        (click)="removeEntry(i)"
+        [disabled]="entries.length === 1"
+        title="Remove this entry"
+      >
+        ✕
+      </button>
+    </div>
+  </div>
+
+  <div class="dictionary-actions">
+    <button type="button" class="btn-add" (click)="addEntry()">
+      + Add Term
+    </button>
+    <button
+      type="button"
+      class="btn-clear"
+      (click)="clearAll()"
+      [disabled]="entries.length === 1 && !entries[0].key && !entries[0].value"
+    >
+      Clear All
+    </button>
+  </div>
+
+  <div class="dictionary-info">
+    <small>
+      <strong>💡 Tip:</strong> Start with main character names and important organizations. 
+      You can add more terms when translating additional chapters.
+    </small>
+  </div>
+</div>

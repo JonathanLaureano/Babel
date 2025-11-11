@@ -30,6 +30,13 @@ class TranslationJob(models.Model):
     english_genre = models.CharField(max_length=100, blank=True, null=True)
     english_description = models.TextField(blank=True, null=True)
     
+    # Translation consistency
+    prompt_dictionary = models.JSONField(
+        blank=True,
+        null=True,
+        help_text="Dictionary of terms for consistent translation (e.g., character names, organizations, special terms)"
+    )
+    
     # Progress tracking
     chapters_requested = models.IntegerField(validators=[MinValueValidator(1)], help_text="Number of chapters to translate")
     chapters_completed = models.IntegerField(default=0, help_text="Number of chapters successfully translated")

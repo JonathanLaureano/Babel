@@ -4,12 +4,13 @@ import { Observable } from 'rxjs';
 import { Series } from '../models/series';
 import { Chapter, ChapterListItem } from '../models/chapter';
 import { Genre } from '../models/genre';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class LibraryService {
-  private apiUrl = 'http://localhost:8000/api/library';
+  private apiUrl = `${environment.apiUrl}/library`;
 
   constructor(private http: HttpClient) { }
 

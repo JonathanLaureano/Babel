@@ -125,7 +125,8 @@ class TranslationJobViewSet(viewsets.ModelViewSet):
                     author=job.english_author,
                     description=job.english_description,
                     cover_image_url=cover_url,
-                    status=serializer.validated_data.get('status', 'Ongoing')
+                    status=serializer.validated_data.get('status', 'Ongoing'),
+                    prompt_dictionary=job.prompt_dictionary
                 )
                 
                 logger.info(f"Created series: {series.title} ({series.series_id})")

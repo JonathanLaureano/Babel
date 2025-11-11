@@ -36,6 +36,12 @@
       </select>
       <small class="form-text text-muted">Hold Ctrl (Windows) or Cmd (Mac) to select multiple genres.</small>
     </div>
+
+    <app-prompt-dictionary-editor
+      [dictionary]="seriesUpdateData.prompt_dictionary"
+      (dictionaryChange)="onDictionaryChange($event)"
+    ></app-prompt-dictionary-editor>
+
     <button type="submit" [disabled]="!seriesForm.form.valid || loading">
       {{ loading ? 'Updating...' : 'Update Series' }}
     </button>

@@ -53,6 +53,7 @@ class TranslationJobSerializer(serializers.ModelSerializer):
             'english_author',
             'english_genre',
             'english_description',
+            'prompt_dictionary',
             'chapters_requested',
             'chapters_completed',
             'chapters_failed',
@@ -129,6 +130,7 @@ class CreateTranslationJobSerializer(serializers.ModelSerializer):
             'novel_url',
             'chapters_requested',
             'translate_all',
+            'prompt_dictionary',
         ]
     
     def validate(self, data):

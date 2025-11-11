@@ -68,13 +68,14 @@ def configure_gemini():
     genai.configure(api_key=api_key)
 
 
-def call_gemini(system_prompt: str, user_text: str) -> str:
+def call_gemini(system_prompt: str, user_text: str, prompt_dictionary: dict = None) -> str:
     """
     Calls the Gemini API with a system prompt and user text.
     
     Args:
         system_prompt: System instruction for the model
         user_text: User text to process
+        prompt_dictionary: Optional dictionary of terms for consistent translation
         
     Returns:
         Generated text response
@@ -83,6 +84,13 @@ def call_gemini(system_prompt: str, user_text: str) -> str:
         Exception: If API call fails
     """
     try:
+        # If prompt dictionary exists, augment the user text with translation guidelines
+        if prompt_dictionary:
+            dictionary_str = "\n\n**Translation Dictionary (use these translations consistently):**\n"
+            for key, value in prompt_dictionary.items():
+                dictionary_str += f"- {key}: {value}\n"
+            user_text = dictionary_str + "\n" + user_text
+        
         model_name = getattr(settings, 'GEMINI_MODEL', 'gemini-2.0-flash-exp')
         model = genai.GenerativeModel(
             model_name,
@@ -255,7 +263,7 @@ def process_chapter(job: TranslationJob, chapter_info: dict) -> bool:
             logger.info(f"Using default title: {cache.english_title}")
         else:
             # Translate the Korean title
-            cache.english_title = call_gemini(METADATA_TRANSLATOR_PROMPT, cache.korean_title)
+            cache.english_title = call_gemini(METADATA_TRANSLATOR_PROMPT, cache.korean_title, job.prompt_dictionary)
             logger.info(f"Translated title: {cache.english_title}")
         
         cache.save()
@@ -264,7 +272,7 @@ def process_chapter(job: TranslationJob, chapter_info: dict) -> bool:
         job.current_operation = f'Translating chapter {chapter_num} content'
         job.save()
         
-        cache.english_content_raw = call_gemini(TRANSLATOR_SYSTEM_PROMPT, cache.korean_content)
+        cache.english_content_raw = call_gemini(TRANSLATOR_SYSTEM_PROMPT, cache.korean_content, job.prompt_dictionary)
         cache.status = 'translated'
         cache.save()
         
@@ -274,7 +282,7 @@ def process_chapter(job: TranslationJob, chapter_info: dict) -> bool:
         job.current_operation = f'Polishing chapter {chapter_num}'
         job.save()
         
-        cache.english_content_final = call_gemini(EDITOR_SYSTEM_PROMPT, cache.english_content_raw)
+        cache.english_content_final = call_gemini(EDITOR_SYSTEM_PROMPT, cache.english_content_raw, job.prompt_dictionary)
         cache.status = 'polished'
         cache.save()
         

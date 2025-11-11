@@ -48,7 +48,7 @@
       No comments yet. Be the first to comment!
     </div>
 
-    <div *ngFor="let comment of comments" class="comment-item">
+    <div *ngFor="let comment of comments" class="comment-item" [id]="'comment-' + comment.comment_id">
       <!-- Comment header -->
       <div class="comment-header">
         <span class="comment-author">{{ comment.user_username }}</span>
@@ -124,7 +124,7 @@
 
       <!-- Replies -->
       <div *ngIf="comment.replies && comment.replies.length > 0" class="replies-container">
-        <div *ngFor="let reply of comment.replies" class="reply-item">
+        <div *ngFor="let reply of comment.replies" class="reply-item" [id]="'comment-' + reply.comment_id">
           <div class="comment-header">
             <span class="comment-author">{{ reply.user_username }}</span>
             <span class="comment-time">{{ getTimeSince(reply.created_at) }}</span>

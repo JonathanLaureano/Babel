@@ -59,6 +59,22 @@
           <p><strong>Last Updated:</strong> {{ series.updated_at | date:'mediumDate' }}</p>
         </div>
 
+        <!-- Bookmark Button -->
+        <div *ngIf="isLoggedIn" class="bookmark-section">
+          <button 
+            class="bookmark-button" 
+            [class.bookmarked]="currentBookmark"
+            (click)="toggleBookmark()"
+            [disabled]="bookmarkLoading"
+          >
+            <span class="bookmark-icon">{{ currentBookmark ? '★' : '☆' }}</span>
+            {{ currentBookmark ? 'Bookmarked' : 'Add Bookmark' }}
+          </button>
+          <p class="bookmark-note">
+            Bookmark this series to quickly pick up where you left off from your profile.
+          </p>
+        </div>
+
         <!-- Rating Submission (only for logged-in users) -->
         <div *ngIf="isLoggedIn" class="rating-submission">
           <app-rating-submit 

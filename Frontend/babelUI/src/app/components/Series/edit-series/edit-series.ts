@@ -5,11 +5,12 @@ import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { LibraryService } from '../../../services/library.service';
 import { Genre } from '../../../models/genre';
 import { Series } from '../../../models/series';
+import { PromptDictionaryEditor } from '../../Shared/prompt-dictionary-editor/prompt-dictionary-editor';
 
 @Component({
   selector: 'app-edit-series',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, PromptDictionaryEditor],
   templateUrl: './edit-series.html',
   styleUrls: ['./edit-series.css']
 })
@@ -21,7 +22,8 @@ export class EditSeries implements OnInit {
     description: '',
     cover_image_url: '',
     status: 'Ongoing',
-    genre_ids: [] as string[]
+    genre_ids: [] as string[],
+    prompt_dictionary: null as Record<string, string> | null
   };
   genres: Genre[] = [];
   error: string | null = null;
@@ -62,7 +64,8 @@ export class EditSeries implements OnInit {
           description: series.description || '',
           cover_image_url: series.cover_image_url || '',
           status: series.status,
-          genre_ids: series.genres.map(g => g.genre_id)
+          genre_ids: series.genres.map(g => g.genre_id),
+          prompt_dictionary: series.prompt_dictionary || null
         };
         this.loading = false;
       },
@@ -88,5 +91,9 @@ export class EditSeries implements OnInit {
         console.error(err);
       }
     });
+  }
+
+  onDictionaryChange(dictionary: Record<string, string> | null): void {
+    this.seriesUpdateData.prompt_dictionary = dictionary;
   }
 }
