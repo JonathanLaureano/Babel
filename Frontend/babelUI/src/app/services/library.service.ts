@@ -15,10 +15,15 @@ export class LibraryService {
   constructor(private http: HttpClient) { }
 
   // Series endpoints
-  getSeries(searchQuery?: string): Observable<Series[]> {
+  getSeries(searchQuery?: string, genreIds?: string[]): Observable<Series[]> {
     let params = new HttpParams();
     if (searchQuery) {
       params = params.set('search', searchQuery);
+    }
+    if (genreIds && genreIds.length > 0) {
+      genreIds.forEach(id => {
+        params = params.append('genre', id);
+      });
     }
     return this.http.get<Series[]>(`${this.apiUrl}/series/`, { params });
   }

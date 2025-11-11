@@ -131,13 +131,18 @@ class TranslationJobViewSet(viewsets.ModelViewSet):
                 
                 logger.info(f"Created series: {series.title} ({series.series_id})")
                 
-                # Handle genre
+                # Handle genre(s) - split by comma if multiple genres
                 if job.english_genre:
-                    genre, created = Genre.objects.get_or_create(
-                        name=job.english_genre
-                    )
-                    SeriesGenre.objects.create(series=series, genre=genre)
-                    logger.info(f"Added genre: {genre.name}")
+                    # Split by comma and strip whitespace from each genre
+                    # Using walrus operator to avoid calling strip() twice per genre
+                    genre_names = [stripped for name in job.english_genre.split(',') if (stripped := name.strip())]
+                    
+                    for genre_name in genre_names:
+                        genre, created = Genre.objects.get_or_create(
+                            name=genre_name
+                        )
+                        SeriesGenre.objects.create(series=series, genre=genre)
+                        logger.info(f"Added genre: {genre.name}")
                 
                 # Get chapters to import
                 selected_chapters = serializer.validated_data.get('selected_chapters')
