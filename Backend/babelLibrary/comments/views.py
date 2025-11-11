@@ -3,7 +3,6 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from django.contrib.contenttypes.models import ContentType
-from django.db.models import Prefetch
 from .models import Comment, CommentLike
 from .serializers import (
     CommentSerializer, CommentCreateUpdateSerializer, 
