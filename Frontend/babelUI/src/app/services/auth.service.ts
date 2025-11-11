@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, BehaviorSubject, tap } from 'rxjs';
 import { User, LoginCredentials, AuthResponse } from '../models/user';
 import { environment } from '../../environments/environment';
+import { SocialAuthService, SocialUser } from '@abacritt/angularx-social-login';
 
 @Injectable({
   providedIn: 'root'
@@ -12,7 +13,10 @@ export class AuthService {
   private currentUserSubject = new BehaviorSubject<User | null>(null);
   public currentUser$ = this.currentUserSubject.asObservable();
 
-  constructor(private http: HttpClient) {
+  constructor(
+    private http: HttpClient,
+    private socialAuthService: SocialAuthService
+  ) {
     this.loadUserFromStorage();
   }
 
@@ -70,5 +74,22 @@ export class AuthService {
   updateCurrentUser(user: User): void {
     sessionStorage.setItem('currentUserId', user.user_id);
     this.currentUserSubject.next(user);
+  }
+
+  // Google OAuth methods
+  googleLogin(googleUser: SocialUser): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${this.apiUrl}/google-login/`, {
+      token: googleUser.idToken
+    }).pipe(
+      tap(response => this.setAuthResponse(response))
+    );
+  }
+
+  googleRegister(googleUser: SocialUser): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${this.apiUrl}/google-register/`, {
+      token: googleUser.idToken
+    }).pipe(
+      tap(response => this.setAuthResponse(response))
+    );
   }
 }

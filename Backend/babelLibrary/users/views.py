@@ -3,6 +3,9 @@ from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
+from django.conf import settings
+from google.oauth2 import id_token
+from google.auth.transport import requests as google_requests
 from .models import Role, Permission, RolePermission, User, Bookmark, ReadingHistory
 from .serializers import (
     RoleSerializer, PermissionSerializer, RolePermissionSerializer, 
@@ -45,6 +48,159 @@ def login_view(request):
         'refresh': str(refresh),
         'user': user_data
     })
+
+
+@api_view(['POST'])
+@permission_classes([permissions.AllowAny])
+def google_login_view(request):
+    """Google OAuth login endpoint"""
+    token = request.data.get('token')
+    
+    if not token:
+        return Response(
+            {'detail': 'Google token is required'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    try:
+        # Verify the Google token
+        idinfo = id_token.verify_oauth2_token(
+            token, 
+            google_requests.Request(), 
+            settings.GOOGLE_CLIENT_ID
+        )
+        
+        # Get user info from Google token
+        email = idinfo.get('email')
+        
+        if not email:
+            return Response(
+                {'detail': 'Email not provided by Google'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Check if user exists
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            return Response(
+                {'detail': 'No account found with this email. Please register first.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        if not user.is_active:
+            return Response(
+                {'detail': 'Account is disabled'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Generate JWT tokens
+        refresh = RefreshToken.for_user(user)
+        user_data = UserSerializer(user).data
+        
+        return Response({
+            'access': str(refresh.access_token),
+            'refresh': str(refresh),
+            'user': user_data
+        })
+        
+    except ValueError as e:
+        # Invalid token
+        return Response(
+            {'detail': f'Invalid Google token: {str(e)}'},
+            status=status.HTTP_401_UNAUTHORIZED
+        )
+    except Exception as e:
+        return Response(
+            {'detail': f'Authentication failed: {str(e)}'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(['POST'])
+@permission_classes([permissions.AllowAny])
+def google_register_view(request):
+    """Google OAuth registration endpoint"""
+    token = request.data.get('token')
+    
+    if not token:
+        return Response(
+            {'detail': 'Google token is required'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    try:
+        # Verify the Google token
+        idinfo = id_token.verify_oauth2_token(
+            token, 
+            google_requests.Request(), 
+            settings.GOOGLE_CLIENT_ID
+        )
+        
+        # Get user info from Google token
+        email = idinfo.get('email')
+        given_name = idinfo.get('given_name', '')
+        family_name = idinfo.get('family_name', '')
+        name = idinfo.get('name', '')
+        
+        if not email:
+            return Response(
+                {'detail': 'Email not provided by Google'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Check if user already exists
+        if User.objects.filter(email=email).exists():
+            return Response(
+                {'detail': 'An account with this email already exists. Please login instead.'},
+                status=status.HTTP_409_CONFLICT
+            )
+        
+        # Generate username from email or name
+        base_username = email.split('@')[0]
+        username = base_username
+        counter = 1
+        
+        # Ensure username is unique
+        while User.objects.filter(username=username).exists():
+            username = f"{base_username}{counter}"
+            counter += 1
+        
+        # Get or create default 'Reader' role
+        reader_role, _ = Role.objects.get_or_create(
+            name='Reader',
+            defaults={'description': 'Default reader role'}
+        )
+        
+        # Create new user (no password needed for Google OAuth users)
+        user = User.objects.create(
+            username=username,
+            email=email,
+            role=reader_role,
+            is_active=True
+        )
+        
+        # Generate JWT tokens
+        refresh = RefreshToken.for_user(user)
+        user_data = UserSerializer(user).data
+        
+        return Response({
+            'access': str(refresh.access_token),
+            'refresh': str(refresh),
+            'user': user_data
+        }, status=status.HTTP_201_CREATED)
+        
+    except ValueError as e:
+        # Invalid token
+        return Response(
+            {'detail': f'Invalid Google token: {str(e)}'},
+            status=status.HTTP_401_UNAUTHORIZED
+        )
+    except Exception as e:
+        return Response(
+            {'detail': f'Registration failed: {str(e)}'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
 
 
 class UserViewSet(viewsets.ModelViewSet):

@@ -215,3 +215,7 @@ AUTHENTICATION_BACKENDS = [
 # Gemini API Configuration
 GEMINI_API_KEY = config('GEMINI_API_KEY', default='')
 GEMINI_MODEL = 'gemini-2.0-flash-exp'  # Default model
+
+# Google OAuth Configuration
+GOOGLE_CLIENT_ID = config('GOOGLE_CLIENT_ID', default='')
+GOOGLE_CLIENT_SECRET = config('GOOGLE_CLIENT_SECRET', default='')

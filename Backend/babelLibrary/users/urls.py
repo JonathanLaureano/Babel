@@ -2,7 +2,8 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
     RoleViewSet, PermissionViewSet, RolePermissionViewSet, 
-    UserViewSet, BookmarkViewSet, ReadingHistoryViewSet
+    UserViewSet, BookmarkViewSet, ReadingHistoryViewSet,
+    google_login_view, google_register_view
 )
 
 router = DefaultRouter()
@@ -16,4 +17,6 @@ router.register(r'reading-history', ReadingHistoryViewSet, basename='reading-his
 # The only thing this file should export is the router's URLs.
 urlpatterns = [
     path('', include(router.urls)),
+    path('google-login/', google_login_view, name='google-login'),
+    path('google-register/', google_register_view, name='google-register'),
 ]

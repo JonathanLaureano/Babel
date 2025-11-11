@@ -5,10 +5,11 @@ import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../services/auth.service';
 import { UserService } from '../../../services/user.service';
 import { RegisterData } from '../../../models/user';
+import { SocialAuthService, GoogleSigninButtonModule } from '@abacritt/angularx-social-login';
 
 @Component({
   selector: 'app-register',
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, GoogleSigninButtonModule],
   templateUrl: './register.html',
   styleUrl: './register.css'
 })
@@ -26,8 +27,16 @@ export class Register implements OnInit {
   constructor(
     private authService: AuthService,
     private userService: UserService, // Injected UserService
-    private router: Router
-  ) {}
+    private router: Router,
+    private socialAuthService: SocialAuthService
+  ) {
+    // Listen for Google sign-in events
+    this.socialAuthService.authState.subscribe((user) => {
+      if (user) {
+        this.handleGoogleRegister(user);
+      }
+    });
+  }
 
   ngOnInit(): void {
     // Set default role to 'Reader' on component initialization
@@ -76,6 +85,23 @@ export class Register implements OnInit {
       error: (err) => {
         console.error('Registration error:', err);
         this.error = err.error?.detail || err.error?.username?.[0] || err.error?.email?.[0] || 'Registration failed. Please try again.';
+        this.loading = false;
+      }
+    });
+  }
+
+  handleGoogleRegister(googleUser: any): void {
+    this.loading = true;
+    this.error = null;
+
+    this.authService.googleRegister(googleUser).subscribe({
+      next: () => {
+        this.loading = false;
+        this.router.navigate(['/']);
+      },
+      error: (err: any) => {
+        console.error('Google registration failed:', err);
+        this.error = err.error?.detail || 'Google registration failed. Please try again.';
         this.loading = false;
       }
     });
