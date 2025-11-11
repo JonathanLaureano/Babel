@@ -3,6 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { Comment, CommentLike, CreateCommentRequest, UpdateCommentRequest, CommentListParams } from '../models/comment';
+import { environment } from '../../environments/environment';
 
 interface PaginatedResponse<T> {
   count: number;
@@ -15,7 +16,7 @@ interface PaginatedResponse<T> {
   providedIn: 'root'
 })
 export class CommentService {
-  private apiUrl = 'http://localhost:8000/api/comments';
+  private apiUrl = `${environment.apiUrl}/comments`;
 
   constructor(private http: HttpClient) { }
 

@@ -3,6 +3,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from django.contrib.contenttypes.models import ContentType
+from django.db.models import Prefetch
 from .models import Comment, CommentLike
 from .serializers import (
     CommentSerializer, CommentCreateUpdateSerializer, 
@@ -26,11 +27,16 @@ class CommentViewSet(viewsets.ModelViewSet):
         """
         Conditionally prefetch 'replies' only for actions that display nested comments.
         This optimizes query performance by avoiding unnecessary prefetching.
+        For by_user action, we need to prefetch the generic relation content objects.
         """
         qs = super().get_queryset()
         # Only prefetch replies when displaying top-level comments with nested replies
         if self.action in ['list', 'by_content', 'retrieve']:
             return qs.prefetch_related('replies__user', 'replies__likes')
+        elif self.action == 'by_user':
+            # For by_user, prefetch the related Series and Chapter objects to avoid N+1 queries
+            # We can't directly prefetch generic relations, but we can use prefetch_related_objects in the view
+            return qs
         return qs
     
     def get_serializer_class(self):
@@ -222,7 +228,7 @@ class CommentViewSet(viewsets.ModelViewSet):
             )
         
         # Filter comments by user
-        comments = self.queryset.filter(user__user_id=user_id)
+        comments = self.get_queryset().filter(user__user_id=user_id)
         
         # Apply ordering if specified in query params
         ordering = request.query_params.get('ordering', '-created_at')
@@ -232,11 +238,54 @@ class CommentViewSet(viewsets.ModelViewSet):
         # Apply pagination
         page = self.paginate_queryset(comments)
         if page is not None:
+            # Prefetch generic relation objects to avoid N+1 queries
+            self._prefetch_content_objects(page)
             serializer = self.get_serializer(page, many=True)
             return self.get_paginated_response(serializer.data)
         
-        serializer = self.get_serializer(comments, many=True)
+        # For non-paginated results
+        comments_list = list(comments)
+        self._prefetch_content_objects(comments_list)
+        serializer = self.get_serializer(comments_list, many=True)
         return Response(serializer.data)
+    
+    def _prefetch_content_objects(self, comments):
+        """
+        Manually prefetch generic relation content objects (Series/Chapter) to avoid N+1 queries.
+        This groups comments by content type and bulk fetches the related objects.
+        """
+        from library.models import Series, Chapter
+        from collections import defaultdict
+        
+        # Group comments by content type
+        series_ids = []
+        chapter_ids = []
+        
+        for comment in comments:
+            if comment.content_type.model == 'series':
+                series_ids.append(comment.object_id)
+            elif comment.content_type.model == 'chapter':
+                chapter_ids.append(comment.object_id)
+        
+        # Bulk fetch Series and Chapter objects
+        series_map = {}
+        chapter_map = {}
+        
+        if series_ids:
+            series_objs = Series.objects.filter(series_id__in=series_ids)
+            series_map = {str(s.series_id): s for s in series_objs}
+        
+        if chapter_ids:
+            # Use select_related to also fetch the related series for chapters
+            chapter_objs = Chapter.objects.filter(chapter_id__in=chapter_ids).select_related('series')
+            chapter_map = {str(c.chapter_id): c for c in chapter_objs}
+        
+        # Cache the content objects on each comment instance
+        for comment in comments:
+            if comment.content_type.model == 'series':
+                comment._cached_content_object = series_map.get(str(comment.object_id))
+            elif comment.content_type.model == 'chapter':
+                comment._cached_content_object = chapter_map.get(str(comment.object_id))
 
 
 class CommentLikeViewSet(viewsets.ReadOnlyModelViewSet):

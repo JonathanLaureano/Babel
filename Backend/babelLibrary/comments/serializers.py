@@ -32,6 +32,10 @@ class CommentSerializer(serializers.ModelSerializer):
     chapter_id = serializers.SerializerMethodField(read_only=True)
     chapter_title = serializers.SerializerMethodField(read_only=True)
     
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._content_object_cache = {}
+    
     class Meta:
         model = Comment
         fields = [
@@ -47,35 +51,43 @@ class CommentSerializer(serializers.ModelSerializer):
         """Return a human-readable content type."""
         return obj.content_type.model
     
+    def _get_content_object(self, obj):
+        """Cache and return the content object to avoid multiple queries."""
+        # First check if the view has already cached the content object
+        if hasattr(obj, '_cached_content_object'):
+            return obj._cached_content_object
+        
+        # Otherwise use instance-level cache
+        cache_key = (obj.content_type.id, obj.object_id)
+        if cache_key not in self._content_object_cache:
+            try:
+                # Use the generic relation to get the content object
+                content_obj = obj.content_type.get_object_for_this_type(pk=obj.object_id)
+                self._content_object_cache[cache_key] = content_obj
+            except Exception:
+                self._content_object_cache[cache_key] = None
+        return self._content_object_cache[cache_key]
+    
     def get_series_id(self, obj):
         """Get the series ID from the content object."""
         if obj.content_type.model == 'series':
             return str(obj.object_id)
         elif obj.content_type.model == 'chapter':
-            try:
-                from library.models import Chapter
-                chapter = Chapter.objects.get(chapter_id=obj.object_id)
-                return str(chapter.series.series_id)
-            except Exception:
-                return None
+            content_obj = self._get_content_object(obj)
+            if content_obj and hasattr(content_obj, 'series'):
+                return str(content_obj.series.series_id)
         return None
     
     def get_series_title(self, obj):
         """Get the series title from the content object."""
         if obj.content_type.model == 'series':
-            try:
-                from library.models import Series
-                series = Series.objects.get(series_id=obj.object_id)
-                return series.title
-            except Exception:
-                return None
+            content_obj = self._get_content_object(obj)
+            if content_obj and hasattr(content_obj, 'title'):
+                return content_obj.title
         elif obj.content_type.model == 'chapter':
-            try:
-                from library.models import Chapter
-                chapter = Chapter.objects.get(chapter_id=obj.object_id)
-                return chapter.series.title
-            except Exception:
-                return None
+            content_obj = self._get_content_object(obj)
+            if content_obj and hasattr(content_obj, 'series'):
+                return content_obj.series.title
         return None
     
     def get_chapter_id(self, obj):
@@ -87,12 +99,9 @@ class CommentSerializer(serializers.ModelSerializer):
     def get_chapter_title(self, obj):
         """Get the chapter number if the comment is on a chapter."""
         if obj.content_type.model == 'chapter':
-            try:
-                from library.models import Chapter
-                chapter = Chapter.objects.get(chapter_id=obj.object_id)
-                return str(chapter.chapter_number)
-            except Exception:
-                return None
+            content_obj = self._get_content_object(obj)
+            if content_obj and hasattr(content_obj, 'chapter_number'):
+                return str(content_obj.chapter_number)
         return None
     
     def get_is_liked_by_user(self, obj):

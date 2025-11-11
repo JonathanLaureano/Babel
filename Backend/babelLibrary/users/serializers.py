@@ -90,7 +90,14 @@ class BookmarkSerializer(serializers.ModelSerializer):
 
 
 class ReadingHistorySerializer(serializers.ModelSerializer):
-    """Serializer for reading history."""
+    """
+    Serializer for reading history.
+    
+    Note: The create method uses update_or_create to automatically update
+    existing reading history records for the same user/series combination.
+    This ensures only one reading history entry exists per user per series,
+    with the most recent chapter they read.
+    """
     series_title = serializers.CharField(source='series.title', read_only=True)
     chapter_number = serializers.IntegerField(source='chapter.chapter_number', read_only=True)
     chapter_title = serializers.CharField(source='chapter.title', read_only=True)
@@ -105,6 +112,13 @@ class ReadingHistorySerializer(serializers.ModelSerializer):
         read_only_fields = ['history_id', 'user', 'last_read_at', 'created_at']
 
     def create(self, validated_data):
+        """
+        Create or update reading history for a user/series combination.
+        
+        This method intentionally uses update_or_create instead of create
+        to ensure only one reading history entry exists per user per series.
+        If a record already exists, it will be updated with the new chapter.
+        """
         # Set the user from the request context
         user = self.context['request'].user
         validated_data['user'] = user
@@ -116,3 +130,9 @@ class ReadingHistorySerializer(serializers.ModelSerializer):
             defaults={'chapter': validated_data['chapter']}
         )
         return obj
+    
+    def update(self, instance, validated_data):
+        """Update the chapter for an existing reading history record."""
+        instance.chapter = validated_data.get('chapter', instance.chapter)
+        instance.save()
+        return instance

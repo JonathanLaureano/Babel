@@ -24,6 +24,8 @@ export class ChapterPage implements OnInit, AfterViewChecked {
   error: string | null = null;
   private pendingCommentId: string | null = null;
   private hasScrolledToComment = false;
+  private scrollAttempts = 0;
+  private readonly MAX_SCROLL_ATTEMPTS = 50; // Limit retries to avoid infinite loops
 
   constructor(
     private route: ActivatedRoute,
@@ -51,14 +53,24 @@ export class ChapterPage implements OnInit, AfterViewChecked {
       if (fragment) {
         this.pendingCommentId = fragment;
         this.hasScrolledToComment = false;
+        this.scrollAttempts = 0;
       }
     });
   }
 
   ngAfterViewChecked(): void {
     // Attempt to scroll to comment after view has been checked and rendered
+    // Only attempt if we have a pending comment, haven't scrolled yet, and haven't exceeded max attempts
     if (this.pendingCommentId && !this.hasScrolledToComment && !this.loading) {
-      this.scrollToComment(this.pendingCommentId);
+      if (this.scrollAttempts < this.MAX_SCROLL_ATTEMPTS) {
+        this.scrollAttempts++;
+        this.scrollToComment(this.pendingCommentId);
+      } else {
+        // Give up after max attempts - comment may not exist or comments haven't loaded
+        console.warn(`Failed to scroll to comment ${this.pendingCommentId} after ${this.MAX_SCROLL_ATTEMPTS} attempts`);
+        this.pendingCommentId = null;
+        this.scrollAttempts = 0;
+      }
     }
   }
 
@@ -149,6 +161,7 @@ export class ChapterPage implements OnInit, AfterViewChecked {
     if (element) {
       this.hasScrolledToComment = true;
       this.pendingCommentId = null;
+      this.scrollAttempts = 0;
       
       // Use requestAnimationFrame to ensure DOM is fully rendered
       requestAnimationFrame(() => {

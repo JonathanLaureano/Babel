@@ -7,6 +7,7 @@
     <div *ngIf="user" class="profile-content">
       <nav class="tabs" role="tablist">
         <button
+          id="info-tab"
           class="tab"
           [class.active]="activeTab === 'info'"
           (click)="switchTab('info')"
@@ -17,6 +18,7 @@
           Profile Info
         </button>
         <button
+          id="comments-tab"
           class="tab"
           [class.active]="activeTab === 'comments'"
           (click)="switchTab('comments')"
@@ -27,6 +29,7 @@
           Comments
         </button>
         <button
+          id="bookmarks-tab"
           class="tab"
           [class.active]="activeTab === 'bookmarks'"
           (click)="switchTab('bookmarks')"

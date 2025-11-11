@@ -9,6 +9,7 @@ import {
   CreateBookmarkRequest,
   UpdateReadingHistoryRequest 
 } from '../models/user-data';
+import { environment } from '../../environments/environment';
 
 interface PaginatedResponse<T> {
   count: number;
@@ -21,7 +22,7 @@ interface PaginatedResponse<T> {
   providedIn: 'root'
 })
 export class UserDataService {
-  private apiUrl = 'http://localhost:8000/api';
+  private apiUrl = environment.apiUrl;
 
   constructor(private http: HttpClient) { }
 

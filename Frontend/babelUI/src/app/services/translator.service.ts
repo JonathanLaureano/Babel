@@ -9,12 +9,13 @@ import {
   ImportTranslationRequest,
   ImportTranslationResponse
 } from '../models/translator';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class TranslatorService {
-  private apiUrl = 'http://localhost:8000/api/translator';
+  private apiUrl = `${environment.apiUrl}/translator`;
 
   constructor(private http: HttpClient) { }
 

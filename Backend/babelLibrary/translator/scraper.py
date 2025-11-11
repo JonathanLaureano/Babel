@@ -21,9 +21,9 @@ def scrape_novel_page(url: str) -> Dict[str, Optional[str]]:
         Dictionary containing Title, Author, Genre, and Description
     """
     try:
-        # Send GET request
+        # Send GET request with generic browser user agent
         headers = {
-            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
         }
         response = requests.get(url, headers=headers, timeout=30)
         response.raise_for_status()
@@ -109,9 +109,9 @@ def scrape_chapter_page(url: str) -> Dict[str, Optional[str]]:
         Note: Chapter number is no longer extracted from the page
     """
     try:
-        # Send GET request
+        # Send GET request with generic browser user agent
         headers = {
-            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
         }
         response = requests.get(url, headers=headers, timeout=30)
         response.raise_for_status()
@@ -182,9 +182,9 @@ def get_chapter_pages(url: str, limit: int = 5, start_from: int = 1) -> List[Dic
         - 'url': Full URL to the chapter page
     """
     try:
-        # Send GET request
+        # Send GET request with generic browser user agent
         headers = {
-            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
         }
         response = requests.get(url, headers=headers, timeout=30)
         response.raise_for_status()
