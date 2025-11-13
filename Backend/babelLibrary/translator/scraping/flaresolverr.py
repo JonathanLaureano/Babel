@@ -12,7 +12,7 @@ import threading
 import atexit
 import json
 
-from .config import FLARESOLVERR_URL, FLARESOLVERR_TIMEOUT_MS
+from .config import FLARESOLVERR_URL, FLARESOLVERR_TIMEOUT_MS, NETWORK_OVERHEAD_TIMEOUT_SECONDS
 from .validation import validate_url
 
 logger = logging.getLogger(__name__)
@@ -157,7 +157,7 @@ def fetch_page_content(url: str, retry_on_stale_session: bool = True) -> str:
         response = requests.post(
             FLARESOLVERR_URL,
             json=payload,
-            timeout=payload["maxTimeout"]/1000 + 10  # Slightly longer than maxTimeout to account for network overhead
+            timeout=payload["maxTimeout"]/1000 + NETWORK_OVERHEAD_TIMEOUT_SECONDS
         )
         response.raise_for_status()
         
@@ -227,7 +227,7 @@ def cleanup_browser():
     and on application shutdown via atexit handler. Thread-safe to prevent
     race conditions and double cleanup.
     """
-    # Get session for this thread
+    # Get session for this thread (outside lock for performance)
     if not hasattr(_thread_local, 'session'):
         return
     
@@ -235,17 +235,30 @@ def cleanup_browser():
     if not session_id:
         return
     
-    # Thread-safe check and cleanup to prevent double destruction
+    # Thread-safe check-and-set to prevent double destruction
+    # Uses a lock to ensure atomicity of the check + add operation
     with _cleanup_lock:
-        # Check if this session is already being cleaned up
+        # CRITICAL: Check again inside the lock (double-checked locking pattern)
+        # Even though we checked session_id above, another thread could have:
+        # 1. Started cleaning this session
+        # 2. Or even the same thread could be re-entering due to signal/atexit race
         if session_id in _cleaning_sessions:
             logger.debug(f"Session {session_id} already being cleaned up, skipping")
             return
         
-        # Mark session as being cleaned up
+        # Also verify the thread-local session hasn't been cleared by another call
+        # This handles edge cases where cleanup_browser() is called multiple times
+        # on the same thread before the first call completes
+        if not hasattr(_thread_local, 'session') or _thread_local.session != session_id:
+            logger.debug(f"Session {session_id} already cleared from thread-local storage")
+            return
+        
+        # Atomically mark session as being cleaned up
+        # This prevents any other thread from entering cleanup for this session_id
         _cleaning_sessions.add(session_id)
         
-        # Clear thread-local reference immediately
+        # Clear thread-local reference immediately while holding the lock
+        # This prevents re-entry on the same thread
         _thread_local.session = None
     
     # Use try-finally to guarantee cleanup set is pruned even on catastrophic failure

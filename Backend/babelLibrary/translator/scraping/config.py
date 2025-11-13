@@ -21,6 +21,18 @@ FLARESOLVERR_URL = getattr(settings, 'FLARESOLVERR_URL', 'http://localhost:8191/
 # This is the maximum time FlareSolverr will wait for a page to load
 FLARESOLVERR_TIMEOUT_MS = 30000
 
+# Network overhead timeout in seconds (10 seconds)
+# Additional time allowed beyond FlareSolverr's maxTimeout to account for:
+# - HTTP request/response overhead
+# - Network latency
+# - FlareSolverr processing time
+NETWORK_OVERHEAD_TIMEOUT_SECONDS = 10
+
+# DNS resolution timeout in seconds (3 seconds)
+# This prevents URL validation from hanging on slow or unresponsive DNS servers
+# Set to a reasonable value to balance security checks with performance
+DNS_RESOLUTION_TIMEOUT = 3.0
+
 # Domain whitelist for SSRF protection - configured via environment variable
 # Set via: SCRAPER_ALLOWED_DOMAINS=domain1.com,domain2.com,domain3.com
 # In Django settings.py, this is parsed from the environment variable automatically
@@ -60,11 +72,6 @@ if ALLOWED_DOMAINS is not None:
                 f"Each label must be 1-63 characters and cannot start or end with a hyphen. "
                 f"Examples: 'example.com', 'sub.example.com', 'example-site.com'"
             )
-else:
-    # Warn if domain whitelist is disabled in production
-    if not settings.DEBUG:
-        logger.warning(
-            "SECURITY WARNING: SCRAPER_ALLOWED_DOMAINS is not set. "
-            "Any public URL can be scraped via FlareSolverr, which may be a security risk. "
-            "Consider setting SCRAPER_ALLOWED_DOMAINS to a whitelist of trusted domains."
-        )
+# Note: Security warning for missing SCRAPER_ALLOWED_DOMAINS is handled by
+# Django's system check framework in translator/checks.py (translator.W001)
+# This runs during `python manage.py check --deploy` instead of at import time

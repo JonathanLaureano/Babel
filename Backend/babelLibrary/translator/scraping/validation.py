@@ -34,7 +34,7 @@ import logging
 import ipaddress
 import socket
 
-from .config import DOMAIN_PATTERN, ALLOWED_DOMAINS
+from .config import DOMAIN_PATTERN, ALLOWED_DOMAINS, DNS_RESOLUTION_TIMEOUT
 
 logger = logging.getLogger(__name__)
 
@@ -179,7 +179,13 @@ def validate_url(url: str) -> None:
         # NOTE: TOCTOU vulnerability - DNS could change between this check and 
         # FlareSolverr's actual request (DNS rebinding attack). Domain whitelist
         # is the primary defense; this check reduces but doesn't eliminate risk.
+        
+        # Store the original timeout to restore it later
+        original_timeout = socket.getdefaulttimeout()
         try:
+            # Set timeout for DNS resolution to prevent hanging
+            socket.setdefaulttimeout(DNS_RESOLUTION_TIMEOUT)
+            
             # Resolve hostname to IP addresses
             addr_info = socket.getaddrinfo(hostname, None)
             for info in addr_info:
@@ -190,6 +196,12 @@ def validate_url(url: str) -> None:
                         f"Domain '{hostname}' resolves to private/internal IP address ({ip_address_str}), "
                         "which is blocked for security reasons (SSRF protection)"
                     )
+        except socket.timeout:
+            # DNS resolution timed out
+            raise ValueError(
+                f"DNS resolution timed out for domain '{hostname}' after {DNS_RESOLUTION_TIMEOUT} seconds. "
+                "The DNS server may be slow or unresponsive."
+            )
         except socket.gaierror as e:
             # DNS resolution failed
             raise ValueError(f"Cannot resolve domain '{hostname}': {str(e)}")
@@ -212,6 +224,9 @@ def validate_url(url: str) -> None:
                 f"Error checking IP for domain '{hostname}': {e}. "
                 f"Proceeding with domain whitelist validation."
             )
+        finally:
+            # Always restore the original timeout to avoid affecting other code
+            socket.setdefaulttimeout(original_timeout)
     
     # Check domain whitelist if configured
     if ALLOWED_DOMAINS is not None:
