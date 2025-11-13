@@ -6,17 +6,120 @@ Uses FlareSolverr to bypass Cloudflare protection.
 from bs4 import BeautifulSoup
 from typing import Dict, Optional, List
 from django.conf import settings
+from django.core.signals import request_finished
+from django.dispatch import receiver
+from urllib.parse import urlparse
 import logging
 import requests
 import threading
+import atexit
 
 logger = logging.getLogger(__name__)
 
 # FlareSolverr endpoint - configurable via Django settings
 FLARESOLVERR_URL = getattr(settings, 'FLARESOLVERR_URL', 'http://localhost:8191/v1')
 
+# Optional domain whitelist - set in Django settings as SCRAPER_ALLOWED_DOMAINS
+# Example: SCRAPER_ALLOWED_DOMAINS = ['booktoki469.com', 'example.com']
+ALLOWED_DOMAINS = getattr(settings, 'SCRAPER_ALLOWED_DOMAINS', None)
+
 # Thread-local storage for FlareSolverr sessions
 _thread_local = threading.local()
+
+
+def _validate_url(url: str) -> None:
+    """Validates URL format and domain whitelist.
+    
+    Args:
+        url: The URL to validate
+        
+    Raises:
+        ValueError: If URL is invalid or domain not allowed
+    """
+    if not url or not isinstance(url, str):
+        raise ValueError("URL must be a non-empty string")
+    
+    # Parse URL
+    try:
+        parsed = urlparse(url)
+    except Exception as e:
+        raise ValueError(f"Invalid URL format: {str(e)}")
+    
+    # Check for valid scheme
+    if parsed.scheme not in ('http', 'https'):
+        raise ValueError(f"Invalid URL scheme: {parsed.scheme}. Only http and https are allowed")
+    
+    # Check for valid netloc (domain)
+    if not parsed.netloc:
+        raise ValueError("URL must contain a valid domain")
+    
+    # Check domain whitelist if configured
+    if ALLOWED_DOMAINS is not None:
+        # Extract domain from netloc (remove port if present)
+        domain = parsed.netloc.split(':')[0]
+        
+        # Check if domain or any parent domain is in whitelist
+        allowed = False
+        for allowed_domain in ALLOWED_DOMAINS:
+            if domain == allowed_domain or domain.endswith(f'.{allowed_domain}'):
+                allowed = True
+                break
+        
+        if not allowed:
+            raise ValueError(
+                f"Domain '{domain}' is not in the allowed domains list. "
+                f"Allowed domains: {', '.join(ALLOWED_DOMAINS)}"
+            )
+    
+    logger.debug(f"URL validation passed: {url}")
+
+
+def _create_flaresolverr_session():
+    """Creates a new FlareSolverr session.
+    
+    Returns:
+        Session ID string
+        
+    Raises:
+        ConnectionError: If FlareSolverr is not running or unreachable
+    """
+    try:
+        response = requests.post(
+            FLARESOLVERR_URL,
+            json={"cmd": "sessions.create"},
+            timeout=10
+        )
+        response.raise_for_status()
+        data = response.json()
+        session_id = data.get('session')
+        logger.info(f"Created FlareSolverr session: {session_id}")
+        return session_id
+    except requests.exceptions.ConnectionError as e:
+        error_msg = (
+            f"Cannot connect to FlareSolverr at {FLARESOLVERR_URL}. "
+            "Please ensure FlareSolverr is running. "
+            "See Docs/FLARESOLVERR.md for installation and setup instructions."
+        )
+        logger.error(error_msg)
+        raise ConnectionError(error_msg) from e
+    except requests.exceptions.Timeout as e:
+        error_msg = (
+            f"FlareSolverr at {FLARESOLVERR_URL} is not responding. "
+            "Please check if the service is running properly."
+        )
+        logger.error(error_msg)
+        raise TimeoutError(error_msg) from e
+    except requests.exceptions.RequestException as e:
+        error_msg = (
+            f"Failed to communicate with FlareSolverr at {FLARESOLVERR_URL}: {str(e)}. "
+            "Please verify FlareSolverr is installed and running correctly."
+        )
+        logger.error(error_msg)
+        raise ConnectionError(error_msg) from e
+    except Exception as e:
+        error_msg = f"Unexpected error creating FlareSolverr session: {str(e)}"
+        logger.error(error_msg)
+        raise
 
 
 def _get_flaresolverr_session():
@@ -30,59 +133,39 @@ def _get_flaresolverr_session():
         _thread_local.session = None
     
     if _thread_local.session is None:
-        # Create a new session in FlareSolverr
-        try:
-            response = requests.post(
-                FLARESOLVERR_URL,
-                json={"cmd": "sessions.create"},
-                timeout=10
-            )
-            response.raise_for_status()
-            data = response.json()
-            _thread_local.session = data.get('session')
-            logger.info(f"Created FlareSolverr session: {_thread_local.session}")
-        except requests.exceptions.ConnectionError as e:
-            error_msg = (
-                f"Cannot connect to FlareSolverr at {FLARESOLVERR_URL}. "
-                "Please ensure FlareSolverr is running. "
-                "See Docs/FLARESOLVERR.md for installation and setup instructions."
-            )
-            logger.error(error_msg)
-            raise ConnectionError(error_msg) from e
-        except requests.exceptions.Timeout as e:
-            error_msg = (
-                f"FlareSolverr at {FLARESOLVERR_URL} is not responding. "
-                "Please check if the service is running properly."
-            )
-            logger.error(error_msg)
-            raise TimeoutError(error_msg) from e
-        except requests.exceptions.RequestException as e:
-            error_msg = (
-                f"Failed to communicate with FlareSolverr at {FLARESOLVERR_URL}: {str(e)}. "
-                "Please verify FlareSolverr is installed and running correctly."
-            )
-            logger.error(error_msg)
-            raise ConnectionError(error_msg) from e
-        except Exception as e:
-            error_msg = f"Unexpected error creating FlareSolverr session: {str(e)}"
-            logger.error(error_msg)
-            raise
+        _thread_local.session = _create_flaresolverr_session()
+    
     return _thread_local.session
 
 
-def _fetch_page_content(url: str) -> str:
+def _invalidate_session():
+    """Invalidates the current thread's FlareSolverr session.
+    
+    Call this when a session becomes stale or invalid.
+    """
+    if hasattr(_thread_local, 'session'):
+        logger.warning(f"Invalidating stale FlareSolverr session: {_thread_local.session}")
+        _thread_local.session = None
+
+
+def _fetch_page_content(url: str, retry_on_stale_session: bool = True) -> str:
     """Fetches page content using FlareSolverr to bypass Cloudflare.
     
     Args:
         url: The URL to fetch
+        retry_on_stale_session: Whether to retry once if session is invalid
         
     Returns:
         HTML content of the page
         
     Raises:
+        ValueError: If URL is invalid or domain not allowed
         ConnectionError: If FlareSolverr is not available
         Exception: If page fails to load or FlareSolverr returns an error
     """
+    # Validate URL before processing
+    _validate_url(url)
+    
     session_id = _get_flaresolverr_session()
     
     try:
@@ -102,7 +185,7 @@ def _fetch_page_content(url: str) -> str:
         response = requests.post(
             FLARESOLVERR_URL,
             json=payload,
-            timeout=70  # Slightly longer than maxTimeout
+            timeout=40  # Slightly longer than maxTimeout (30s) to account for network overhead
         )
         response.raise_for_status()
         
@@ -118,6 +201,14 @@ def _fetch_page_content(url: str) -> str:
                 raise Exception("No HTML content in FlareSolverr response")
         else:
             error_msg = data.get('message', 'Unknown error')
+            
+            # Check if error indicates invalid session
+            if 'session' in error_msg.lower() and retry_on_stale_session:
+                logger.warning(f"Session appears invalid, recreating: {error_msg}")
+                _invalidate_session()
+                # Retry once with new session
+                return _fetch_page_content(url, retry_on_stale_session=False)
+            
             raise Exception(f"FlareSolverr returned an error: {error_msg}")
             
     except requests.exceptions.ConnectionError as e:
@@ -146,7 +237,8 @@ def _fetch_page_content(url: str) -> str:
 def cleanup_browser():
     """Cleanup FlareSolverr session for current thread.
     
-    Call this when shutting down or at the end of request processing.
+    This is automatically called on request completion via Django signals
+    and on application shutdown via atexit handler.
     """
     # Get session for this thread
     if not hasattr(_thread_local, 'session'):
@@ -167,6 +259,36 @@ def cleanup_browser():
             logger.warning(f"Unexpected error destroying FlareSolverr session: {e}")
         finally:
             _thread_local.session = None
+
+
+# Django signal handler to cleanup sessions after request completion
+@receiver(request_finished)
+def cleanup_session_on_request_finished(sender, **kwargs):
+    """Clean up FlareSolverr session when Django request finishes."""
+    cleanup_browser()
+
+
+# Register cleanup on application shutdown
+atexit.register(cleanup_browser)
+
+
+class FlareSolverrSession:
+    """Context manager for explicit FlareSolverr session management.
+    
+    Usage:
+        with FlareSolverrSession():
+            # Session is automatically created and cleaned up
+            result = scrape_novel_page(url)
+    """
+    
+    def __enter__(self):
+        """Enter context - session will be created on first use."""
+        return self
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Exit context - cleanup session."""
+        cleanup_browser()
+        return False  # Don't suppress exceptions
 
 
 def scrape_novel_page(url: str) -> Dict[str, Optional[str]]:
@@ -238,28 +360,14 @@ def scrape_novel_page(url: str) -> Dict[str, Optional[str]]:
         logger.info(f"Successfully scraped novel page: {result.get('Title', 'Unknown')}")
         return result
         
-    except (ConnectionError, TimeoutError) as e:
-        # Network-related errors - already logged by _fetch_page_content
-        logger.error(f"Network error scraping novel page {url}: {e}")
-        error_result: Dict[str, Optional[str]] = {
-            'Title': None,
-            'Author': None,
-            'Genre': None,
-            'Description': f"Network Error: {str(e)}",
-            'Cover_Image': None
-        }
-        return error_result
+    except (ConnectionError, TimeoutError, ValueError) as e:
+        # Network/validation errors - log and re-raise to allow caller to handle
+        logger.error(f"Error scraping novel page {url}: {e}")
+        raise
     except Exception as e:
-        # Unexpected errors - log full traceback for debugging
+        # Unexpected errors - log full traceback and re-raise
         logger.exception(f"Unexpected error scraping novel page {url}: {e}")
-        error_result: Dict[str, Optional[str]] = {
-            'Title': None,
-            'Author': None,
-            'Genre': None,
-            'Description': f"Error: {str(e)}",
-            'Cover_Image': None
-        }
-        return error_result
+        raise
 
 
 def scrape_chapter_page(url: str) -> Dict[str, Optional[str]]:
@@ -317,22 +425,14 @@ def scrape_chapter_page(url: str) -> Dict[str, Optional[str]]:
         logger.info(f"Successfully scraped chapter: {result.get('Chapter Title', 'No title')}")
         return result
         
-    except (ConnectionError, TimeoutError) as e:
-        # Network-related errors - already logged by _fetch_page_content
-        logger.error(f"Network error scraping chapter page {url}: {e}")
-        error_result: Dict[str, Optional[str]] = {
-            'Chapter Title': None,
-            'Chapter Content': f"Network Error: {str(e)}"
-        }
-        return error_result
+    except (ConnectionError, TimeoutError, ValueError) as e:
+        # Network/validation errors - log and re-raise to allow caller to handle
+        logger.error(f"Error scraping chapter page {url}: {e}")
+        raise
     except Exception as e:
-        # Unexpected errors - log full traceback for debugging
+        # Unexpected errors - log full traceback and re-raise
         logger.exception(f"Unexpected error scraping chapter page {url}: {e}")
-        error_result: Dict[str, Optional[str]] = {
-            'Chapter Title': None,
-            'Chapter Content': f"Error: {str(e)}"
-        }
-        return error_result
+        raise
 
 
 def get_chapter_pages(url: str, limit: int = 5, start_from: int = 1) -> List[Dict[str, str]]:
@@ -405,11 +505,11 @@ def get_chapter_pages(url: str, limit: int = 5, start_from: int = 1) -> List[Dic
         logger.info(f"Found {len(chapters)} chapters to process (starting from chapter {start_from})")
         return chapters
         
-    except (ConnectionError, TimeoutError) as e:
-        # Network-related errors - already logged by _fetch_page_content
-        logger.error(f"Network error getting chapter pages from {url}: {e}")
-        return []
+    except (ConnectionError, TimeoutError, ValueError) as e:
+        # Network/validation errors - log and re-raise to allow caller to handle
+        logger.error(f"Error getting chapter pages from {url}: {e}")
+        raise
     except Exception as e:
-        # Unexpected errors - log full traceback for debugging
+        # Unexpected errors - log full traceback and re-raise
         logger.exception(f"Unexpected error getting chapter pages from {url}: {e}")
-        return []
+        raise
