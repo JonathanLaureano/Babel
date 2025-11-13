@@ -67,6 +67,8 @@ class SeriesViewSet(ViewTrackingMixin, viewsets.ModelViewSet):
         if genre_ids:
             # Filter series that have ALL of the specified genres
             # Use a separate filter for each genre to ensure ALL are present
+            # This allows users to find series that match multiple genre criteria simultaneously
+            # (e.g., both Fantasy AND Romance), rather than just any one of the selected genres.
             for genre_id in genre_ids:
                 queryset = queryset.filter(genres__genre_id=genre_id)
             # .distinct() is required because filtering on the many-to-many 'genres' relationship

@@ -225,7 +225,7 @@ FLARESOLVERR_URL = config('FLARESOLVERR_URL', default='http://localhost:8191/v1'
 # Domain whitelist for SSRF protection (comma-separated list)
 # Set to empty string or omit to disable whitelist (NOT recommended for production)
 # Example: SCRAPER_ALLOWED_DOMAINS=ridibooks.com,otherdomain.com
-_scraper_domains_raw = config('SCRAPER_ALLOWED_DOMAINS')
+_scraper_domains_raw = config('SCRAPER_ALLOWED_DOMAINS', default='')
 if _scraper_domains_raw:
     # Parse comma-separated list, strip whitespace, filter empty strings
     SCRAPER_ALLOWED_DOMAINS = [

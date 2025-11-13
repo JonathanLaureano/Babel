@@ -434,7 +434,6 @@ else:
 
 # REQUIRED: Secure FlareSolverr URL
 FLARESOLVERR_URL = env('FLARESOLVERR_URL', default='http://flaresolverr:8191/v1')
-```
 
 ### Docker Compose
 
