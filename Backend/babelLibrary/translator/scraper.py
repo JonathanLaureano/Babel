@@ -2,6 +2,34 @@
 Web scraping module for Korean novel websites.
 Adapted from Rosetta project for Django integration.
 Uses FlareSolverr to bypass Cloudflare protection.
+
+Security Considerations:
+    This module implements multiple layers of SSRF (Server-Side Request Forgery)
+    protection, including private IP blocking and domain whitelisting. However,
+    there are inherent limitations:
+    
+    TOCTOU Vulnerability (Time-of-Check-Time-of-Use):
+        DNS resolution can change between validation and actual request execution.
+        An attacker could use DNS rebinding to bypass IP-based protections:
+        - Initial DNS query returns safe public IP (passes validation)
+        - DNS record changes to private IP with low TTL
+        - FlareSolverr's request uses the new private IP
+        
+    Defense-in-Depth Strategy:
+        1. Domain Whitelist: Set SCRAPER_ALLOWED_DOMAINS in production (primary defense)
+        2. Private IP Blocking: Validates DNS at request time (reduces attack window)
+        3. FlareSolverr Network Isolation: Run FlareSolverr with restricted network access
+        4. Container Security: Use Docker network policies to limit FlareSolverr's access
+        5. Monitoring: Log and monitor all scraping activity
+        
+    Deployment Recommendations:
+        - REQUIRED: Set SCRAPER_ALLOWED_DOMAINS to trusted domains only
+        - REQUIRED: Run FlareSolverr in isolated network environment
+        - RECOMMENDED: Configure firewall rules blocking FlareSolverr from internal networks
+        - RECOMMENDED: Use Docker network isolation for FlareSolverr container
+        - RECOMMENDED: Monitor FlareSolverr logs for unusual access patterns
+        
+    See Docs/FLARESOLVERR.md for detailed security configuration.
 """
 from bs4 import BeautifulSoup
 from typing import Dict, Optional, List
@@ -16,24 +44,61 @@ import atexit
 import json
 import ipaddress
 import socket
+import re
 
 logger = logging.getLogger(__name__)
 
-# FlareSolverr endpoint - configurable via Django settings
+# Regex for validating domain names (RFC 1035/1123 compliant)
+# Allows letters, digits, hyphens; labels 1-63 chars; no leading/trailing hyphens
+DOMAIN_PATTERN = re.compile(
+    r'^(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)*'
+    r'[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$'
+)
+
+# FlareSolverr endpoint - configurable via Django settings (from FLARESOLVERR_URL env var)
 FLARESOLVERR_URL = getattr(settings, 'FLARESOLVERR_URL', 'http://localhost:8191/v1')
 
-# Optional domain whitelist - set in Django settings as SCRAPER_ALLOWED_DOMAINS
+# FlareSolverr request timeout in milliseconds (30 seconds)
+# This is the maximum time FlareSolverr will wait for a page to load
+FLARESOLVERR_TIMEOUT_MS = 30000
+
+# Domain whitelist for SSRF protection - configured via environment variable
+# Set via: SCRAPER_ALLOWED_DOMAINS=domain1.com,domain2.com,domain3.com
+# In Django settings.py, this is parsed from the environment variable automatically
 # Must be None to disable domain filtering, or a non-empty list of domain strings.
-# Example: SCRAPER_ALLOWED_DOMAINS = ['example.com']
+# 
+# Configuration Examples:
+#   Environment Variable: SCRAPER_ALLOWED_DOMAINS=example.com,sub.example.com
+#   Django Setting: SCRAPER_ALLOWED_DOMAINS = ['example.com', 'sub.example.com']
+#
 # SECURITY WARNING: When None (default), any public URL can be scraped. For production,
 # strongly recommend setting a whitelist to prevent SSRF attacks.
+# 
+# See Docs/FLARESOLVERR.md for detailed configuration and security guidance.
 ALLOWED_DOMAINS = getattr(settings, 'SCRAPER_ALLOWED_DOMAINS', None)
 if ALLOWED_DOMAINS is not None:
-    if not isinstance(ALLOWED_DOMAINS, list) or not ALLOWED_DOMAINS or not all(isinstance(d, str) and d for d in ALLOWED_DOMAINS):
+    if not isinstance(ALLOWED_DOMAINS, list) or not ALLOWED_DOMAINS:
         raise ValueError(
-            "SCRAPER_ALLOWED_DOMAINS must be None or a non-empty list of non-empty domain strings. "
+            "SCRAPER_ALLOWED_DOMAINS must be None or a non-empty list of domain strings. "
             f"Got: {ALLOWED_DOMAINS!r}"
         )
+    
+    # Validate each domain format
+    for domain in ALLOWED_DOMAINS:
+        if not isinstance(domain, str) or not domain:
+            raise ValueError(
+                f"Each domain in SCRAPER_ALLOWED_DOMAINS must be a non-empty string. "
+                f"Invalid domain: {domain!r}"
+            )
+        
+        # Validate domain format (no spaces, valid characters, proper structure)
+        if not DOMAIN_PATTERN.match(domain):
+            raise ValueError(
+                f"Invalid domain format in SCRAPER_ALLOWED_DOMAINS: '{domain}'. "
+                f"Domains must contain only letters, digits, hyphens, and dots. "
+                f"Each label must be 1-63 characters and cannot start or end with a hyphen. "
+                f"Examples: 'example.com', 'sub.example.com', 'example-site.com'"
+            )
 else:
     # Warn if domain whitelist is disabled in production
     if not settings.DEBUG:
@@ -51,6 +116,30 @@ _cleanup_lock = threading.Lock()
 
 # Track sessions being cleaned up to prevent double cleanup
 _cleaning_sessions = set()
+
+
+def _is_valid_domain(domain: str) -> bool:
+    """Check if a domain name is properly formatted.
+    
+    Args:
+        domain: Domain name to validate
+        
+    Returns:
+        True if domain is valid, False otherwise
+    """
+    if not domain or not isinstance(domain, str):
+        return False
+    
+    # Check length (max 253 characters for full domain)
+    if len(domain) > 253:
+        return False
+    
+    # Check for invalid characters (spaces, etc.)
+    if ' ' in domain or '\t' in domain or '\n' in domain:
+        return False
+    
+    # Validate against RFC 1035/1123 pattern
+    return DOMAIN_PATTERN.match(domain) is not None
 
 
 def _is_safe_ip(ip_str: str) -> bool:
@@ -99,6 +188,28 @@ def _validate_url(url: str) -> None:
         
     Raises:
         ValueError: If URL is invalid, domain not allowed, or targets private network
+        
+    Security Note - TOCTOU (Time-of-Check-Time-of-Use) Limitation:
+        DNS resolution is checked at validation time, but DNS could change between
+        validation and when FlareSolverr makes the actual request (DNS rebinding attack).
+        
+        Example attack scenario:
+        1. Attacker's DNS initially returns safe IP: 1.2.3.4
+        2. This validation passes
+        3. Attacker's DNS quickly changes to private IP: 192.168.1.1
+        4. FlareSolverr makes request to private IP
+        
+        Mitigations in place:
+        - Domain whitelist (when configured) limits attack surface
+        - Multiple DNS resolution checks reduce attack window
+        - FlareSolverr should be configured with its own SSRF protections
+        
+        Additional recommended protections:
+        - Set SCRAPER_ALLOWED_DOMAINS to trusted domains only (production)
+        - Configure FlareSolverr with network isolation/firewall rules
+        - Run FlareSolverr in container with restricted network access
+        - Use DNS pinning in FlareSolverr configuration if available
+        - Monitor FlareSolverr logs for suspicious activity
     """
     if not url or not isinstance(url, str):
         raise ValueError("URL must be a non-empty string")
@@ -120,6 +231,20 @@ def _validate_url(url: str) -> None:
     # Extract hostname (remove port if present)
     hostname = parsed.netloc.split(':')[0]
     
+    # Validate hostname format (unless it's an IP address)
+    # IP addresses will be checked separately below
+    try:
+        # Try parsing as IP - if it works, skip domain validation
+        ipaddress.ip_address(hostname)
+    except ValueError:
+        # Not an IP, validate as domain name
+        if not _is_valid_domain(hostname):
+            raise ValueError(
+                f"Invalid domain name format: '{hostname}'. "
+                f"Domain must contain only letters, digits, hyphens, and dots. "
+                f"Each label must be 1-63 characters and cannot start or end with a hyphen."
+            )
+    
     # SSRF Protection: Block requests to private/internal IP addresses
     # First, check if hostname is already an IP address
     try:
@@ -130,6 +255,9 @@ def _validate_url(url: str) -> None:
             )
     except ValueError:
         # Not an IP address, it's a hostname - need to resolve it
+        # NOTE: TOCTOU vulnerability - DNS could change between this check and 
+        # FlareSolverr's actual request (DNS rebinding attack). Domain whitelist
+        # is the primary defense; this check reduces but doesn't eliminate risk.
         try:
             # Resolve hostname to IP addresses
             addr_info = socket.getaddrinfo(hostname, None)
@@ -148,9 +276,21 @@ def _validate_url(url: str) -> None:
             # Re-raise ValueError from IP check
             raise
         except Exception as e:
-            # Other DNS/network errors
-            logger.warning(f"Error checking IP for domain '{hostname}': {e}")
-            # Continue - don't block on DNS errors, whitelist will catch it if configured
+            # Other DNS/network errors during IP validation
+            # SECURITY: If no whitelist is configured, we MUST fail securely
+            # Cannot skip SSRF validation when it's the only protection layer
+            if ALLOWED_DOMAINS is None:
+                raise ValueError(
+                    f"Cannot validate IP addresses for domain '{hostname}' due to DNS/network error: {str(e)}. "
+                    f"Blocking request for security (SSRF protection). "
+                    f"To allow this domain, configure SCRAPER_ALLOWED_DOMAINS in settings."
+                )
+            # If whitelist is configured, it will validate the domain below
+            # Log the DNS error but allow whitelist check to proceed
+            logger.warning(
+                f"Error checking IP for domain '{hostname}': {e}. "
+                f"Proceeding with domain whitelist validation."
+            )
     
     # Check domain whitelist if configured
     if ALLOWED_DOMAINS is not None:
@@ -178,6 +318,8 @@ def _create_flaresolverr_session():
         
     Raises:
         ConnectionError: If FlareSolverr is not running or unreachable
+        TimeoutError: If FlareSolverr does not respond within timeout period
+        ValueError: If FlareSolverr returns invalid JSON or missing session ID
     """
     try:
         response = requests.post(
@@ -238,6 +380,8 @@ def _get_flaresolverr_session():
     
     Raises:
         ConnectionError: If FlareSolverr is not running or unreachable
+        TimeoutError: If FlareSolverr does not respond within timeout period
+        ValueError: If FlareSolverr returns invalid JSON or missing session ID
     """
     # Get or initialize session for this thread
     if not hasattr(_thread_local, 'session'):
@@ -286,7 +430,7 @@ def _fetch_page_content(url: str, retry_on_stale_session: bool = True) -> str:
         payload = {
             "cmd": "request.get",
             "url": url,
-            "maxTimeout": 30000
+            "maxTimeout": FLARESOLVERR_TIMEOUT_MS
         }
         
         # Add session if available
@@ -296,7 +440,7 @@ def _fetch_page_content(url: str, retry_on_stale_session: bool = True) -> str:
         response = requests.post(
             FLARESOLVERR_URL,
             json=payload,
-            timeout=payload["maxTimeout"]/1000 + 10 # Slightly longer than maxTimeout (30s) to account for network overhead
+            timeout=payload["maxTimeout"]/1000 + 10  # Slightly longer than maxTimeout to account for network overhead
         )
         response.raise_for_status()
         
@@ -387,21 +531,24 @@ def cleanup_browser():
         # Clear thread-local reference immediately
         _thread_local.session = None
     
-    # Perform cleanup outside lock to avoid holding it during network call
+    # Use try-finally to guarantee cleanup set is pruned even on catastrophic failure
     try:
-        response = requests.post(
-            FLARESOLVERR_URL,
-            json={"cmd": "sessions.destroy", "session": session_id},
-            timeout=10
-        )
-        response.raise_for_status()
-        logger.info(f"Destroyed FlareSolverr session: {session_id}")
-    except requests.exceptions.RequestException as e:
-        logger.warning(f"Could not destroy FlareSolverr session {session_id}: {e}")
-    except Exception as e:
-        logger.warning(f"Unexpected error destroying FlareSolverr session {session_id}: {e}")
+        # Perform cleanup outside lock to avoid holding it during network call
+        try:
+            response = requests.post(
+                FLARESOLVERR_URL,
+                json={"cmd": "sessions.destroy", "session": session_id},
+                timeout=10
+            )
+            response.raise_for_status()
+            logger.info(f"Destroyed FlareSolverr session: {session_id}")
+        except requests.exceptions.RequestException as e:
+            logger.warning(f"Could not destroy FlareSolverr session {session_id}: {e}")
+        except Exception as e:
+            logger.warning(f"Unexpected error destroying FlareSolverr session {session_id}: {e}")
     finally:
-        # Remove from cleaning set after cleanup attempt
+        # ALWAYS remove from cleaning set, even if something catastrophic happened
+        # This ensures the session ID doesn't remain stuck in the set indefinitely
         with _cleanup_lock:
             _cleaning_sessions.discard(session_id)
 

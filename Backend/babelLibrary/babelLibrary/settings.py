@@ -221,4 +221,18 @@ GEMINI_MODEL = 'gemini-2.0-flash-exp'  # Default model
 # Can be customized for different deployments (e.g., Docker: http://flaresolverr:8191/v1)
 FLARESOLVERR_URL = config('FLARESOLVERR_URL', default='http://localhost:8191/v1')
 
-SCRAPER_ALLOWED_DOMAINS = ['booktoki469.com']
+# Scraper Security Configuration
+# Domain whitelist for SSRF protection (comma-separated list)
+# Set to empty string or omit to disable whitelist (NOT recommended for production)
+# Example: SCRAPER_ALLOWED_DOMAINS=ridibooks.com,otherdomain.com
+_scraper_domains_raw = config('SCRAPER_ALLOWED_DOMAINS')
+if _scraper_domains_raw:
+    # Parse comma-separated list, strip whitespace, filter empty strings
+    SCRAPER_ALLOWED_DOMAINS = [
+        domain.strip() 
+        for domain in _scraper_domains_raw.split(',') 
+        if domain.strip()
+    ]
+else:
+    # Empty string = disable whitelist (only recommended for development)
+    SCRAPER_ALLOWED_DOMAINS = None
