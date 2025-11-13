@@ -5,6 +5,7 @@ Uses curl_cffi to bypass Cloudflare protection.
 """
 from bs4 import BeautifulSoup
 from typing import Dict, Optional, List
+from django.conf import settings
 import logging
 import time
 import requests
@@ -12,8 +13,8 @@ import json
 
 logger = logging.getLogger(__name__)
 
-# FlareSolverr endpoint
-FLARESOLVERR_URL = "http://localhost:8191/v1"
+# FlareSolverr endpoint - configurable via Django settings
+FLARESOLVERR_URL = getattr(settings, 'FLARESOLVERR_URL', 'http://localhost:8191/v1')
 
 # Session ID for FlareSolverr
 _flaresolverr_session = None
@@ -22,6 +23,9 @@ _flaresolverr_session = None
 def _get_flaresolverr_session():
     """
     Gets or creates a FlareSolverr session.
+    
+    Raises:
+        ConnectionError: If FlareSolverr is not running or unreachable
     """
     global _flaresolverr_session
     if _flaresolverr_session is None:
@@ -32,15 +36,40 @@ def _get_flaresolverr_session():
                 json={"cmd": "sessions.create"},
                 timeout=10
             )
+            response.raise_for_status()
             data = response.json()
             _flaresolverr_session = data.get('session')
             logger.info(f"Created FlareSolverr session: {_flaresolverr_session}")
+        except requests.exceptions.ConnectionError as e:
+            error_msg = (
+                f"Cannot connect to FlareSolverr at {FLARESOLVERR_URL}. "
+                "Please ensure FlareSolverr is running. "
+                "See Docs/FLARESOLVERR.md for installation and setup instructions."
+            )
+            logger.error(error_msg)
+            raise ConnectionError(error_msg) from e
+        except requests.exceptions.Timeout as e:
+            error_msg = (
+                f"FlareSolverr at {FLARESOLVERR_URL} is not responding. "
+                "Please check if the service is running properly."
+            )
+            logger.error(error_msg)
+            raise TimeoutError(error_msg) from e
+        except requests.exceptions.RequestException as e:
+            error_msg = (
+                f"Failed to communicate with FlareSolverr at {FLARESOLVERR_URL}: {str(e)}. "
+                "Please verify FlareSolverr is installed and running correctly."
+            )
+            logger.error(error_msg)
+            raise ConnectionError(error_msg) from e
         except Exception as e:
-            logger.warning(f"Could not create FlareSolverr session: {e}")
+            error_msg = f"Unexpected error creating FlareSolverr session: {str(e)}"
+            logger.error(error_msg)
+            raise
     return _flaresolverr_session
 
 
-def _fetch_page_content(url: str, wait_for_selector: Optional[str] = None, retry_count: int = 0) -> str:
+def _fetch_page_content(url: str, wait_for_selector: Optional[str] = None) -> str:
     """
     Fetches page content using FlareSolverr to bypass Cloudflare.
     
@@ -52,7 +81,8 @@ def _fetch_page_content(url: str, wait_for_selector: Optional[str] = None, retry
         HTML content of the page
         
     Raises:
-        Exception: If page fails to load
+        ConnectionError: If FlareSolverr is not available
+        Exception: If page fails to load or FlareSolverr returns an error
     """
     session_id = _get_flaresolverr_session()
     
@@ -75,6 +105,7 @@ def _fetch_page_content(url: str, wait_for_selector: Optional[str] = None, retry
             json=payload,
             timeout=70  # Slightly longer than maxTimeout
         )
+        response.raise_for_status()
         
         data = response.json()
         
@@ -88,8 +119,26 @@ def _fetch_page_content(url: str, wait_for_selector: Optional[str] = None, retry
                 raise Exception("No HTML content in FlareSolverr response")
         else:
             error_msg = data.get('message', 'Unknown error')
-            raise Exception(f"FlareSolverr error: {error_msg}")
+            raise Exception(f"FlareSolverr returned an error: {error_msg}")
             
+    except requests.exceptions.ConnectionError as e:
+        error_msg = (
+            f"Lost connection to FlareSolverr at {FLARESOLVERR_URL} while fetching {url}. "
+            "Please ensure FlareSolverr is still running."
+        )
+        logger.error(error_msg)
+        raise ConnectionError(error_msg) from e
+    except requests.exceptions.Timeout as e:
+        error_msg = (
+            f"FlareSolverr timed out while fetching {url}. "
+            "The website may be slow or FlareSolverr is overloaded."
+        )
+        logger.error(error_msg)
+        raise TimeoutError(error_msg) from e
+    except requests.exceptions.RequestException as e:
+        error_msg = f"Network error while fetching {url} via FlareSolverr: {str(e)}"
+        logger.error(error_msg)
+        raise ConnectionError(error_msg) from e
     except Exception as e:
         logger.error(f"Error fetching {url}: {e}")
         raise
@@ -103,15 +152,19 @@ def cleanup_browser():
     
     if _flaresolverr_session:
         try:
-            requests.post(
+            response = requests.post(
                 FLARESOLVERR_URL,
                 json={"cmd": "sessions.destroy", "session": _flaresolverr_session},
                 timeout=10
             )
+            response.raise_for_status()
             logger.info(f"Destroyed FlareSolverr session: {_flaresolverr_session}")
-        except Exception as e:
+        except requests.exceptions.RequestException as e:
             logger.warning(f"Could not destroy FlareSolverr session: {e}")
-        _flaresolverr_session = None
+        except Exception as e:
+            logger.warning(f"Unexpected error destroying FlareSolverr session: {e}")
+        finally:
+            _flaresolverr_session = None
 
 
 def scrape_novel_page(url: str) -> Dict[str, Optional[str]]:
@@ -125,7 +178,7 @@ def scrape_novel_page(url: str) -> Dict[str, Optional[str]]:
         Dictionary containing Title, Author, Genre, and Description
     """
     try:
-        # Fetch page content using Playwright
+        # Fetch page content using FlareSolverr
         logger.info(f"Fetching novel page: {url}")
         html_content = _fetch_page_content(url, wait_for_selector='.view-title')
         
@@ -207,7 +260,7 @@ def scrape_chapter_page(url: str) -> Dict[str, Optional[str]]:
         Note: Chapter number is no longer extracted from the page
     """
     try:
-        # Fetch page content using Playwright
+        # Fetch page content using FlareSolverr
         logger.info(f"Fetching chapter page: {url}")
         html_content = _fetch_page_content(url, wait_for_selector='#novel_content')
         
