@@ -1,5 +1,4 @@
-"""
-Translation service module using Google Gemini API.
+"""Translation service module using Google Gemini API.
 Adapted from Rosetta project for Django integration.
 """
 import google.generativeai as genai
@@ -69,8 +68,7 @@ def configure_gemini():
 
 
 def call_gemini(system_prompt: str, user_text: str, prompt_dictionary: dict = None) -> str:
-    """
-    Calls the Gemini API with a system prompt and user text.
+    """Calls the Gemini API with a system prompt and user text.
     
     Args:
         system_prompt: System instruction for the model
@@ -104,8 +102,7 @@ def call_gemini(system_prompt: str, user_text: str, prompt_dictionary: dict = No
 
 
 def translate_text(text: str, prompt_type: str = 'content') -> str:
-    """
-    Translate Korean text to English using appropriate prompt.
+    """Translate Korean text to English using appropriate prompt.
     
     Args:
         text: Korean text to translate
@@ -120,8 +117,7 @@ def translate_text(text: str, prompt_type: str = 'content') -> str:
 
 
 def polish_translation(raw_translation: str) -> str:
-    """
-    Polish raw translation into natural English.
+    """Polish raw translation into natural English.
     
     Args:
         raw_translation: Raw English translation
@@ -134,8 +130,7 @@ def polish_translation(raw_translation: str) -> str:
 
 
 def process_novel_metadata(job: TranslationJob) -> bool:
-    """
-    Scrape and translate novel metadata.
+    """Scrape and translate novel metadata.
     
     Args:
         job: TranslationJob instance
@@ -199,8 +194,7 @@ def process_novel_metadata(job: TranslationJob) -> bool:
 
 
 def process_chapter(job: TranslationJob, chapter_info: dict) -> bool:
-    """
-    Scrape, translate, and cache a single chapter.
+    """Scrape, translate, and cache a single chapter.
     
     Args:
         job: TranslationJob instance
@@ -314,8 +308,7 @@ def process_chapter(job: TranslationJob, chapter_info: dict) -> bool:
 
 
 def start_translation_job(job_id):
-    """
-    Start processing a translation job.
+    """Start processing a translation job.
     
     Args:
         job_id: UUID of the TranslationJob

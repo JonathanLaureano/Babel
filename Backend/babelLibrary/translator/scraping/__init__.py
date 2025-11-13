@@ -3,9 +3,6 @@ Web scraping module for Korean novel websites.
 Adapted from Rosetta project for Django integration.
 Uses FlareSolverr to bypass Cloudflare protection.
 
-This module has been refactored into a package for better organization.
-This file maintains backward compatibility by re-exporting the public API.
-
 Security Considerations:
     This module implements multiple layers of SSRF (Server-Side Request Forgery)
     protection, including private IP blocking and domain whitelisting. However,
@@ -35,15 +32,19 @@ Security Considerations:
     See Docs/FLARESOLVERR.md for detailed security configuration.
 """
 
-# Re-export public API from the scraping package
-from .scraping import (
+# Import public API
+from .parsers import (
     scrape_novel_page,
     scrape_chapter_page,
     get_chapter_pages,
+)
+
+from .flaresolverr import (
     cleanup_browser,
     FlareSolverrSession,
 )
 
+# Export public API
 __all__ = [
     'scrape_novel_page',
     'scrape_chapter_page',

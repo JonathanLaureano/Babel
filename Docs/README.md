@@ -305,7 +305,7 @@ Access via Django admin at `/admin/`:
 
 ## Limitations
 
-- Web scraping is site-specific (currently optimized for BookToki)
+- Web scraping is site-specific
 - Translation quality depends on Gemini API
 - Long chapters may hit API token limits
 - Requires stable internet connection

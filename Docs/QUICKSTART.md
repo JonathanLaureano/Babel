@@ -60,7 +60,7 @@ curl -X POST http://localhost:8000/api/translator/jobs/ \
   -H "Authorization: Bearer YOUR_TOKEN_HERE" \
   -H "Content-Type: application/json" \
   -d '{
-    "novel_url": "https://booktoki.com/novel/4007556",
+    "novel_url": "https://book.com/novel/4007556",
     "chapters_requested": 1
   }'
 ```

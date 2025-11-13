@@ -65,10 +65,13 @@ class SeriesViewSet(ViewTrackingMixin, viewsets.ModelViewSet):
         # Handle multiple genre filtering via query params
         genre_ids = self.request.query_params.getlist('genre')
         if genre_ids:
-            # Filter series that have ANY of the specified genres
+            # Filter series that have ALL of the specified genres
+            # Use a separate filter for each genre to ensure ALL are present
+            for genre_id in genre_ids:
+                queryset = queryset.filter(genres__genre_id=genre_id)
             # .distinct() is required because filtering on the many-to-many 'genres' relationship
-            # can cause the same series to appear multiple times if it matches multiple genres
-            queryset = queryset.filter(genres__genre_id__in=genre_ids).distinct()
+            # can cause the same series to appear multiple times
+            queryset = queryset.distinct()
         
         return queryset
 

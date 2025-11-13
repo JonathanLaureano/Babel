@@ -19,7 +19,7 @@ class CommentViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
     filterset_fields = ['user', 'parent_comment']
-    ordering_fields = ['created_at', 'updated_at']
+    ordering_fields = ['created_at', 'updated_at', 'like_count']
     ordering = ['-created_at']
     
     def get_queryset(self):
