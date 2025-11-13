@@ -1,11 +1,12 @@
 """
-Translation service module using Google Gemini API.
+"""Translation service module using Google Gemini API.
 Adapted from Rosetta project for Django integration.
 """
 import google.generativeai as genai
 from django.conf import settings
 from django.utils import timezone
 import logging
+import os
 from .models import TranslationJob, TranslatedChapterCache
 from .scraper import scrape_novel_page, get_chapter_pages, scrape_chapter_page
 
@@ -323,6 +324,9 @@ def start_translation_job(job_id):
     This function should be called asynchronously (e.g., via Celery)
     or in a background thread for production use.
     """
+    # Allow Django ORM calls in thread with active event loop (from Playwright)
+    os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = "true"
+    
     try:
         from library.models import Series, Chapter
         

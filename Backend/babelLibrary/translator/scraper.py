@@ -1,13 +1,117 @@
 """
 Web scraping module for Korean novel websites.
 Adapted from Rosetta project for Django integration.
+Uses curl_cffi to bypass Cloudflare protection.
 """
-import requests
 from bs4 import BeautifulSoup
 from typing import Dict, Optional, List
 import logging
+import time
+import requests
+import json
 
 logger = logging.getLogger(__name__)
+
+# FlareSolverr endpoint
+FLARESOLVERR_URL = "http://localhost:8191/v1"
+
+# Session ID for FlareSolverr
+_flaresolverr_session = None
+
+
+def _get_flaresolverr_session():
+    """
+    Gets or creates a FlareSolverr session.
+    """
+    global _flaresolverr_session
+    if _flaresolverr_session is None:
+        # Create a new session in FlareSolverr
+        try:
+            response = requests.post(
+                FLARESOLVERR_URL,
+                json={"cmd": "sessions.create"},
+                timeout=10
+            )
+            data = response.json()
+            _flaresolverr_session = data.get('session')
+            logger.info(f"Created FlareSolverr session: {_flaresolverr_session}")
+        except Exception as e:
+            logger.warning(f"Could not create FlareSolverr session: {e}")
+    return _flaresolverr_session
+
+
+def _fetch_page_content(url: str, wait_for_selector: Optional[str] = None, retry_count: int = 0) -> str:
+    """
+    Fetches page content using FlareSolverr to bypass Cloudflare.
+    
+    Args:
+        url: The URL to fetch
+        wait_for_selector: Not used but kept for API compatibility
+        
+    Returns:
+        HTML content of the page
+        
+    Raises:
+        Exception: If page fails to load
+    """
+    session_id = _get_flaresolverr_session()
+    
+    try:
+        logger.info(f"Fetching via FlareSolverr: {url}")
+        
+        # Request FlareSolverr to fetch the page
+        payload = {
+            "cmd": "request.get",
+            "url": url,
+            "maxTimeout": 60000
+        }
+        
+        # Add session if available
+        if session_id:
+            payload["session"] = session_id
+        
+        response = requests.post(
+            FLARESOLVERR_URL,
+            json=payload,
+            timeout=70  # Slightly longer than maxTimeout
+        )
+        
+        data = response.json()
+        
+        if data.get('status') == 'ok':
+            solution = data.get('solution', {})
+            html = solution.get('response')
+            if html:
+                logger.info(f"Successfully fetched {url}")
+                return html
+            else:
+                raise Exception("No HTML content in FlareSolverr response")
+        else:
+            error_msg = data.get('message', 'Unknown error')
+            raise Exception(f"FlareSolverr error: {error_msg}")
+            
+    except Exception as e:
+        logger.error(f"Error fetching {url}: {e}")
+        raise
+
+
+def cleanup_browser():
+    """
+    Cleanup FlareSolverr session. Call this when shutting down the application.
+    """
+    global _flaresolverr_session
+    
+    if _flaresolverr_session:
+        try:
+            requests.post(
+                FLARESOLVERR_URL,
+                json={"cmd": "sessions.destroy", "session": _flaresolverr_session},
+                timeout=10
+            )
+            logger.info(f"Destroyed FlareSolverr session: {_flaresolverr_session}")
+        except Exception as e:
+            logger.warning(f"Could not destroy FlareSolverr session: {e}")
+        _flaresolverr_session = None
 
 
 def scrape_novel_page(url: str) -> Dict[str, Optional[str]]:
@@ -21,15 +125,12 @@ def scrape_novel_page(url: str) -> Dict[str, Optional[str]]:
         Dictionary containing Title, Author, Genre, and Description
     """
     try:
-        # Send GET request with generic browser user agent
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-        }
-        response = requests.get(url, headers=headers, timeout=30)
-        response.raise_for_status()
+        # Fetch page content using Playwright
+        logger.info(f"Fetching novel page: {url}")
+        html_content = _fetch_page_content(url, wait_for_selector='.view-title')
         
         # Parse HTML
-        soup = BeautifulSoup(response.content, 'html.parser')
+        soup = BeautifulSoup(html_content, 'html.parser')
         
         # Extract information for Novel site
         result: Dict[str, Optional[str]] = {
@@ -82,8 +183,8 @@ def scrape_novel_page(url: str) -> Dict[str, Optional[str]]:
         logger.info(f"Successfully scraped novel page: {result.get('Title', 'Unknown')}")
         return result
         
-    except requests.RequestException as e:
-        logger.error(f"Error fetching URL {url}: {e}")
+    except Exception as e:
+        logger.error(f"Error scraping novel page {url}: {e}")
         error_result: Dict[str, Optional[str]] = {
             'Title': None,
             'Author': None,
@@ -92,9 +193,6 @@ def scrape_novel_page(url: str) -> Dict[str, Optional[str]]:
             'Cover_Image': None
         }
         return error_result
-    except Exception as e:
-        logger.error(f"Unexpected error scraping novel page: {e}")
-        raise
 
 
 def scrape_chapter_page(url: str) -> Dict[str, Optional[str]]:
@@ -109,15 +207,12 @@ def scrape_chapter_page(url: str) -> Dict[str, Optional[str]]:
         Note: Chapter number is no longer extracted from the page
     """
     try:
-        # Send GET request with generic browser user agent
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-        }
-        response = requests.get(url, headers=headers, timeout=30)
-        response.raise_for_status()
+        # Fetch page content using Playwright
+        logger.info(f"Fetching chapter page: {url}")
+        html_content = _fetch_page_content(url, wait_for_selector='#novel_content')
         
         # Parse HTML
-        soup = BeautifulSoup(response.content, 'html.parser')
+        soup = BeautifulSoup(html_content, 'html.parser')
         
         result: Dict[str, Optional[str]] = {
             'Chapter Title': None,
@@ -155,16 +250,13 @@ def scrape_chapter_page(url: str) -> Dict[str, Optional[str]]:
         logger.info(f"Successfully scraped chapter: {result.get('Chapter Title', 'No title')}")
         return result
         
-    except requests.RequestException as e:
-        logger.error(f"Error fetching chapter URL {url}: {e}")
+    except Exception as e:
+        logger.error(f"Error scraping chapter page {url}: {e}")
         error_result: Dict[str, Optional[str]] = {
             'Chapter Title': None,
             'Chapter Content': f"Error: {str(e)}"
         }
         return error_result
-    except Exception as e:
-        logger.error(f"Unexpected error scraping chapter page: {e}")
-        raise
 
 
 def get_chapter_pages(url: str, limit: int = 5, start_from: int = 1) -> List[Dict[str, str]]:
@@ -182,15 +274,12 @@ def get_chapter_pages(url: str, limit: int = 5, start_from: int = 1) -> List[Dic
         - 'url': Full URL to the chapter page
     """
     try:
-        # Send GET request with generic browser user agent
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-        }
-        response = requests.get(url, headers=headers, timeout=30)
-        response.raise_for_status()
+        # Fetch page content
+        logger.info(f"Fetching chapter list from: {url}")
+        html_content = _fetch_page_content(url, wait_for_selector='ul.list-body')
         
         # Parse HTML
-        soup = BeautifulSoup(response.content, 'html.parser')
+        soup = BeautifulSoup(html_content, 'html.parser')
         
         # Find the chapter list (ul.list-body)
         list_body = soup.find('ul', class_='list-body')
@@ -240,9 +329,6 @@ def get_chapter_pages(url: str, limit: int = 5, start_from: int = 1) -> List[Dic
         logger.info(f"Found {len(chapters)} chapters to process (starting from chapter {start_from})")
         return chapters
         
-    except requests.RequestException as e:
-        logger.error(f"Error fetching chapter list from {url}: {e}")
-        return []
     except Exception as e:
-        logger.error(f"Unexpected error getting chapter pages: {e}")
+        logger.error(f"Error getting chapter pages from {url}: {e}")
         return []
