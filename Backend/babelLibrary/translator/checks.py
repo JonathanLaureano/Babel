@@ -32,7 +32,7 @@ def check_scraper_domain_whitelist(app_configs, **kwargs):
                         'Set SCRAPER_ALLOWED_DOMAINS in your settings to a list of trusted domains '
                         'to prevent SSRF attacks. Any public URL can be scraped via FlareSolverr '
                         'when this setting is not configured. '
-                        'Example: SCRAPER_ALLOWED_DOMAINS = ["booktoki469.com", "example.com"]'
+                        'Example: SCRAPER_ALLOWED_DOMAINS = ["example.com"]'
                     ),
                     obj='settings.SCRAPER_ALLOWED_DOMAINS',
                     id='translator.W001',
