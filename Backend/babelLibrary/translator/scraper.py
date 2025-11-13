@@ -13,6 +13,9 @@ import logging
 import requests
 import threading
 import atexit
+import json
+import ipaddress
+import socket
 
 logger = logging.getLogger(__name__)
 
@@ -20,21 +23,82 @@ logger = logging.getLogger(__name__)
 FLARESOLVERR_URL = getattr(settings, 'FLARESOLVERR_URL', 'http://localhost:8191/v1')
 
 # Optional domain whitelist - set in Django settings as SCRAPER_ALLOWED_DOMAINS
-# Example: SCRAPER_ALLOWED_DOMAINS = ['booktoki469.com', 'example.com']
+# Must be None to disable domain filtering, or a non-empty list of domain strings.
+# Example: SCRAPER_ALLOWED_DOMAINS = ['example.com']
+# SECURITY WARNING: When None (default), any public URL can be scraped. For production,
+# strongly recommend setting a whitelist to prevent SSRF attacks.
 ALLOWED_DOMAINS = getattr(settings, 'SCRAPER_ALLOWED_DOMAINS', None)
+if ALLOWED_DOMAINS is not None:
+    if not isinstance(ALLOWED_DOMAINS, list) or not ALLOWED_DOMAINS or not all(isinstance(d, str) and d for d in ALLOWED_DOMAINS):
+        raise ValueError(
+            "SCRAPER_ALLOWED_DOMAINS must be None or a non-empty list of non-empty domain strings. "
+            f"Got: {ALLOWED_DOMAINS!r}"
+        )
+else:
+    # Warn if domain whitelist is disabled in production
+    if not settings.DEBUG:
+        logger.warning(
+            "SECURITY WARNING: SCRAPER_ALLOWED_DOMAINS is not set. "
+            "Any public URL can be scraped via FlareSolverr, which may be a security risk. "
+            "Consider setting SCRAPER_ALLOWED_DOMAINS to a whitelist of trusted domains."
+        )
 
 # Thread-local storage for FlareSolverr sessions
 _thread_local = threading.local()
 
+# Lock for thread-safe cleanup operations
+_cleanup_lock = threading.Lock()
+
+# Track sessions being cleaned up to prevent double cleanup
+_cleaning_sessions = set()
+
+
+def _is_safe_ip(ip_str: str) -> bool:
+    """Check if an IP address is safe to connect to (not private/internal).
+    
+    Args:
+        ip_str: IP address string to check
+        
+    Returns:
+        True if IP is public and safe, False if private/internal
+    """
+    try:
+        ip = ipaddress.ip_address(ip_str)
+        
+        # Block private IP ranges (SSRF protection)
+        if ip.is_private:
+            return False
+        
+        # Block loopback addresses (127.0.0.0/8, ::1)
+        if ip.is_loopback:
+            return False
+        
+        # Block link-local addresses (169.254.0.0/16, fe80::/10)
+        if ip.is_link_local:
+            return False
+        
+        # Block reserved addresses
+        if ip.is_reserved:
+            return False
+        
+        # Block multicast addresses
+        if ip.is_multicast:
+            return False
+        
+        return True
+    except ValueError:
+        # Invalid IP address
+        return False
+
 
 def _validate_url(url: str) -> None:
-    """Validates URL format and domain whitelist.
+    """Validates URL format, domain whitelist, and blocks SSRF attempts.
     
     Args:
         url: The URL to validate
         
     Raises:
-        ValueError: If URL is invalid or domain not allowed
+        ValueError: If URL is invalid, domain not allowed, or targets private network
     """
     if not url or not isinstance(url, str):
         raise ValueError("URL must be a non-empty string")
@@ -53,21 +117,53 @@ def _validate_url(url: str) -> None:
     if not parsed.netloc:
         raise ValueError("URL must contain a valid domain")
     
+    # Extract hostname (remove port if present)
+    hostname = parsed.netloc.split(':')[0]
+    
+    # SSRF Protection: Block requests to private/internal IP addresses
+    # First, check if hostname is already an IP address
+    try:
+        ip = ipaddress.ip_address(hostname)
+        if not _is_safe_ip(str(ip)):
+            raise ValueError(
+                f"Access to private/internal IP addresses is blocked for security reasons: {hostname}"
+            )
+    except ValueError:
+        # Not an IP address, it's a hostname - need to resolve it
+        try:
+            # Resolve hostname to IP addresses
+            addr_info = socket.getaddrinfo(hostname, None)
+            for info in addr_info:
+                # info[4] is (address, port) tuple - get address only
+                ip_address_str = str(info[4][0])
+                if not _is_safe_ip(ip_address_str):
+                    raise ValueError(
+                        f"Domain '{hostname}' resolves to private/internal IP address ({ip_address_str}), "
+                        "which is blocked for security reasons (SSRF protection)"
+                    )
+        except socket.gaierror as e:
+            # DNS resolution failed
+            raise ValueError(f"Cannot resolve domain '{hostname}': {str(e)}")
+        except ValueError as e:
+            # Re-raise ValueError from IP check
+            raise
+        except Exception as e:
+            # Other DNS/network errors
+            logger.warning(f"Error checking IP for domain '{hostname}': {e}")
+            # Continue - don't block on DNS errors, whitelist will catch it if configured
+    
     # Check domain whitelist if configured
     if ALLOWED_DOMAINS is not None:
-        # Extract domain from netloc (remove port if present)
-        domain = parsed.netloc.split(':')[0]
-        
         # Check if domain or any parent domain is in whitelist
         allowed = False
         for allowed_domain in ALLOWED_DOMAINS:
-            if domain == allowed_domain or domain.endswith(f'.{allowed_domain}'):
+            if hostname == allowed_domain or hostname.endswith(f'.{allowed_domain}'):
                 allowed = True
                 break
         
         if not allowed:
             raise ValueError(
-                f"Domain '{domain}' is not in the allowed domains list. "
+                f"Domain '{hostname}' is not in the allowed domains list. "
                 f"Allowed domains: {', '.join(ALLOWED_DOMAINS)}"
             )
     
@@ -90,8 +186,23 @@ def _create_flaresolverr_session():
             timeout=10
         )
         response.raise_for_status()
-        data = response.json()
+        
+        # Parse JSON response with error handling
+        try:
+            data = response.json()
+        except json.JSONDecodeError as e:
+            error_msg = (
+                f"FlareSolverr returned invalid JSON response. "
+                f"This may indicate FlareSolverr is misconfigured or not running properly. "
+                f"Response text: {response.text[:200]}"
+            )
+            logger.error(error_msg)
+            raise ValueError(error_msg) from e
+        
         session_id = data.get('session')
+        if not session_id:
+            raise ValueError(f"FlareSolverr response missing session ID. Response: {data}")
+        
         logger.info(f"Created FlareSolverr session: {session_id}")
         return session_id
     except requests.exceptions.ConnectionError as e:
@@ -185,11 +296,22 @@ def _fetch_page_content(url: str, retry_on_stale_session: bool = True) -> str:
         response = requests.post(
             FLARESOLVERR_URL,
             json=payload,
-            timeout=40  # Slightly longer than maxTimeout (30s) to account for network overhead
+            timeout=payload["maxTimeout"]/1000 + 10 # Slightly longer than maxTimeout (30s) to account for network overhead
         )
         response.raise_for_status()
         
-        data = response.json()
+        # Parse JSON response with error handling
+        try:
+            data = response.json()
+        except json.JSONDecodeError as e:
+            error_msg = (
+                f"FlareSolverr returned invalid JSON response for {url}. "
+                f"This may indicate FlareSolverr is misconfigured or crashed. "
+                f"Response status: {response.status_code}, "
+                f"Response text: {response.text[:200]}"
+            )
+            logger.error(error_msg)
+            raise ValueError(error_msg) from e
         
         if data.get('status') == 'ok':
             solution = data.get('solution', {})
@@ -208,6 +330,9 @@ def _fetch_page_content(url: str, retry_on_stale_session: bool = True) -> str:
                 _invalidate_session()
                 # Retry once with new session
                 return _fetch_page_content(url, retry_on_stale_session=False)
+            
+            if not retry_on_stale_session:
+                logger.error(f"Retry after session recreation failed for {url}: {error_msg}")
             
             raise Exception(f"FlareSolverr returned an error: {error_msg}")
             
@@ -238,27 +363,47 @@ def cleanup_browser():
     """Cleanup FlareSolverr session for current thread.
     
     This is automatically called on request completion via Django signals
-    and on application shutdown via atexit handler.
+    and on application shutdown via atexit handler. Thread-safe to prevent
+    race conditions and double cleanup.
     """
     # Get session for this thread
     if not hasattr(_thread_local, 'session'):
         return
     
-    if _thread_local.session:
-        try:
-            response = requests.post(
-                FLARESOLVERR_URL,
-                json={"cmd": "sessions.destroy", "session": _thread_local.session},
-                timeout=10
-            )
-            response.raise_for_status()
-            logger.info(f"Destroyed FlareSolverr session: {_thread_local.session}")
-        except requests.exceptions.RequestException as e:
-            logger.warning(f"Could not destroy FlareSolverr session: {e}")
-        except Exception as e:
-            logger.warning(f"Unexpected error destroying FlareSolverr session: {e}")
-        finally:
-            _thread_local.session = None
+    session_id = _thread_local.session
+    if not session_id:
+        return
+    
+    # Thread-safe check and cleanup to prevent double destruction
+    with _cleanup_lock:
+        # Check if this session is already being cleaned up
+        if session_id in _cleaning_sessions:
+            logger.debug(f"Session {session_id} already being cleaned up, skipping")
+            return
+        
+        # Mark session as being cleaned up
+        _cleaning_sessions.add(session_id)
+        
+        # Clear thread-local reference immediately
+        _thread_local.session = None
+    
+    # Perform cleanup outside lock to avoid holding it during network call
+    try:
+        response = requests.post(
+            FLARESOLVERR_URL,
+            json={"cmd": "sessions.destroy", "session": session_id},
+            timeout=10
+        )
+        response.raise_for_status()
+        logger.info(f"Destroyed FlareSolverr session: {session_id}")
+    except requests.exceptions.RequestException as e:
+        logger.warning(f"Could not destroy FlareSolverr session {session_id}: {e}")
+    except Exception as e:
+        logger.warning(f"Unexpected error destroying FlareSolverr session {session_id}: {e}")
+    finally:
+        # Remove from cleaning set after cleanup attempt
+        with _cleanup_lock:
+            _cleaning_sessions.discard(session_id)
 
 
 # Django signal handler to cleanup sessions after request completion
@@ -275,19 +420,61 @@ atexit.register(cleanup_browser)
 class FlareSolverrSession:
     """Context manager for explicit FlareSolverr session management.
     
+    Creates a new FlareSolverr session on entry and guarantees cleanup on exit.
+    Useful for isolating session lifecycle in specific code blocks.
+    
     Usage:
         with FlareSolverrSession():
-            # Session is automatically created and cleaned up
+            # Fresh session is created and ready to use
             result = scrape_novel_page(url)
+            # Session is automatically cleaned up after this block
+    
+    Note: For normal Django request/response cycles, sessions are managed
+    automatically via signals. Use this context manager when you need explicit
+    control over session lifecycle (e.g., in background tasks, scripts).
     """
     
+    def __init__(self):
+        """Initialize context manager."""
+        self._old_session = None
+    
     def __enter__(self):
-        """Enter context - session will be created on first use."""
+        """Enter context - create new session immediately.
+        
+        Returns:
+            self for context manager protocol
+        """
+        # Save any existing session for this thread
+        self._old_session = getattr(_thread_local, 'session', None)
+        
+        # Force creation of a new session
+        try:
+            session_id = _create_flaresolverr_session()
+            _thread_local.session = session_id
+            logger.debug(f"Created FlareSolverr session in context manager: {session_id}")
+        except Exception as e:
+            logger.error(f"Failed to create FlareSolverr session in context manager: {e}")
+            raise
+        
         return self
     
     def __exit__(self, exc_type, exc_val, exc_tb):
-        """Exit context - cleanup session."""
-        cleanup_browser()
+        """Exit context - cleanup session created by this context manager.
+        
+        Args:
+            exc_type: Exception type if raised in context
+            exc_val: Exception value if raised in context
+            exc_tb: Exception traceback if raised in context
+            
+        Returns:
+            False to propagate any exceptions
+        """
+        try:
+            cleanup_browser()
+        finally:
+            # Restore previous session (if any) for this thread
+            _thread_local.session = self._old_session
+        
         return False  # Don't suppress exceptions
 
 

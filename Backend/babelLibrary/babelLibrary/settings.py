@@ -220,3 +220,5 @@ GEMINI_MODEL = 'gemini-2.0-flash-exp'  # Default model
 # URL for FlareSolverr service used to bypass Cloudflare protection
 # Can be customized for different deployments (e.g., Docker: http://flaresolverr:8191/v1)
 FLARESOLVERR_URL = config('FLARESOLVERR_URL', default='http://localhost:8191/v1')
+
+SCRAPER_ALLOWED_DOMAINS = ['booktoki469.com']
