@@ -1,34 +1,35 @@
 """
 Web scraping module for Korean novel websites.
 Adapted from Rosetta project for Django integration.
-Uses curl_cffi to bypass Cloudflare protection.
+Uses FlareSolverr to bypass Cloudflare protection.
 """
 from bs4 import BeautifulSoup
 from typing import Dict, Optional, List
 from django.conf import settings
 import logging
-import time
 import requests
-import json
+import threading
 
 logger = logging.getLogger(__name__)
 
 # FlareSolverr endpoint - configurable via Django settings
 FLARESOLVERR_URL = getattr(settings, 'FLARESOLVERR_URL', 'http://localhost:8191/v1')
 
-# Session ID for FlareSolverr
-_flaresolverr_session = None
+# Thread-local storage for FlareSolverr sessions
+_thread_local = threading.local()
 
 
 def _get_flaresolverr_session():
-    """
-    Gets or creates a FlareSolverr session.
+    """Gets or creates a FlareSolverr session (thread-safe).
     
     Raises:
         ConnectionError: If FlareSolverr is not running or unreachable
     """
-    global _flaresolverr_session
-    if _flaresolverr_session is None:
+    # Get or initialize session for this thread
+    if not hasattr(_thread_local, 'session'):
+        _thread_local.session = None
+    
+    if _thread_local.session is None:
         # Create a new session in FlareSolverr
         try:
             response = requests.post(
@@ -38,8 +39,8 @@ def _get_flaresolverr_session():
             )
             response.raise_for_status()
             data = response.json()
-            _flaresolverr_session = data.get('session')
-            logger.info(f"Created FlareSolverr session: {_flaresolverr_session}")
+            _thread_local.session = data.get('session')
+            logger.info(f"Created FlareSolverr session: {_thread_local.session}")
         except requests.exceptions.ConnectionError as e:
             error_msg = (
                 f"Cannot connect to FlareSolverr at {FLARESOLVERR_URL}. "
@@ -66,16 +67,14 @@ def _get_flaresolverr_session():
             error_msg = f"Unexpected error creating FlareSolverr session: {str(e)}"
             logger.error(error_msg)
             raise
-    return _flaresolverr_session
+    return _thread_local.session
 
 
-def _fetch_page_content(url: str, wait_for_selector: Optional[str] = None) -> str:
-    """
-    Fetches page content using FlareSolverr to bypass Cloudflare.
+def _fetch_page_content(url: str) -> str:
+    """Fetches page content using FlareSolverr to bypass Cloudflare.
     
     Args:
         url: The URL to fetch
-        wait_for_selector: Not used but kept for API compatibility
         
     Returns:
         HTML content of the page
@@ -93,7 +92,7 @@ def _fetch_page_content(url: str, wait_for_selector: Optional[str] = None) -> st
         payload = {
             "cmd": "request.get",
             "url": url,
-            "maxTimeout": 60000
+            "maxTimeout": 30000
         }
         
         # Add session if available
@@ -145,26 +144,29 @@ def _fetch_page_content(url: str, wait_for_selector: Optional[str] = None) -> st
 
 
 def cleanup_browser():
-    """
-    Cleanup FlareSolverr session. Call this when shutting down the application.
-    """
-    global _flaresolverr_session
+    """Cleanup FlareSolverr session for current thread.
     
-    if _flaresolverr_session:
+    Call this when shutting down or at the end of request processing.
+    """
+    # Get session for this thread
+    if not hasattr(_thread_local, 'session'):
+        return
+    
+    if _thread_local.session:
         try:
             response = requests.post(
                 FLARESOLVERR_URL,
-                json={"cmd": "sessions.destroy", "session": _flaresolverr_session},
+                json={"cmd": "sessions.destroy", "session": _thread_local.session},
                 timeout=10
             )
             response.raise_for_status()
-            logger.info(f"Destroyed FlareSolverr session: {_flaresolverr_session}")
+            logger.info(f"Destroyed FlareSolverr session: {_thread_local.session}")
         except requests.exceptions.RequestException as e:
             logger.warning(f"Could not destroy FlareSolverr session: {e}")
         except Exception as e:
             logger.warning(f"Unexpected error destroying FlareSolverr session: {e}")
         finally:
-            _flaresolverr_session = None
+            _thread_local.session = None
 
 
 def scrape_novel_page(url: str) -> Dict[str, Optional[str]]:
@@ -180,7 +182,7 @@ def scrape_novel_page(url: str) -> Dict[str, Optional[str]]:
     try:
         # Fetch page content using FlareSolverr
         logger.info(f"Fetching novel page: {url}")
-        html_content = _fetch_page_content(url, wait_for_selector='.view-title')
+        html_content = _fetch_page_content(url)
         
         # Parse HTML
         soup = BeautifulSoup(html_content, 'html.parser')
@@ -236,8 +238,20 @@ def scrape_novel_page(url: str) -> Dict[str, Optional[str]]:
         logger.info(f"Successfully scraped novel page: {result.get('Title', 'Unknown')}")
         return result
         
+    except (ConnectionError, TimeoutError) as e:
+        # Network-related errors - already logged by _fetch_page_content
+        logger.error(f"Network error scraping novel page {url}: {e}")
+        error_result: Dict[str, Optional[str]] = {
+            'Title': None,
+            'Author': None,
+            'Genre': None,
+            'Description': f"Network Error: {str(e)}",
+            'Cover_Image': None
+        }
+        return error_result
     except Exception as e:
-        logger.error(f"Error scraping novel page {url}: {e}")
+        # Unexpected errors - log full traceback for debugging
+        logger.exception(f"Unexpected error scraping novel page {url}: {e}")
         error_result: Dict[str, Optional[str]] = {
             'Title': None,
             'Author': None,
@@ -262,7 +276,7 @@ def scrape_chapter_page(url: str) -> Dict[str, Optional[str]]:
     try:
         # Fetch page content using FlareSolverr
         logger.info(f"Fetching chapter page: {url}")
-        html_content = _fetch_page_content(url, wait_for_selector='#novel_content')
+        html_content = _fetch_page_content(url)
         
         # Parse HTML
         soup = BeautifulSoup(html_content, 'html.parser')
@@ -303,8 +317,17 @@ def scrape_chapter_page(url: str) -> Dict[str, Optional[str]]:
         logger.info(f"Successfully scraped chapter: {result.get('Chapter Title', 'No title')}")
         return result
         
+    except (ConnectionError, TimeoutError) as e:
+        # Network-related errors - already logged by _fetch_page_content
+        logger.error(f"Network error scraping chapter page {url}: {e}")
+        error_result: Dict[str, Optional[str]] = {
+            'Chapter Title': None,
+            'Chapter Content': f"Network Error: {str(e)}"
+        }
+        return error_result
     except Exception as e:
-        logger.error(f"Error scraping chapter page {url}: {e}")
+        # Unexpected errors - log full traceback for debugging
+        logger.exception(f"Unexpected error scraping chapter page {url}: {e}")
         error_result: Dict[str, Optional[str]] = {
             'Chapter Title': None,
             'Chapter Content': f"Error: {str(e)}"
@@ -329,7 +352,7 @@ def get_chapter_pages(url: str, limit: int = 5, start_from: int = 1) -> List[Dic
     try:
         # Fetch page content
         logger.info(f"Fetching chapter list from: {url}")
-        html_content = _fetch_page_content(url, wait_for_selector='ul.list-body')
+        html_content = _fetch_page_content(url)
         
         # Parse HTML
         soup = BeautifulSoup(html_content, 'html.parser')
@@ -382,6 +405,11 @@ def get_chapter_pages(url: str, limit: int = 5, start_from: int = 1) -> List[Dic
         logger.info(f"Found {len(chapters)} chapters to process (starting from chapter {start_from})")
         return chapters
         
+    except (ConnectionError, TimeoutError) as e:
+        # Network-related errors - already logged by _fetch_page_content
+        logger.error(f"Network error getting chapter pages from {url}: {e}")
+        return []
     except Exception as e:
-        logger.error(f"Error getting chapter pages from {url}: {e}")
+        # Unexpected errors - log full traceback for debugging
+        logger.exception(f"Unexpected error getting chapter pages from {url}: {e}")
         return []

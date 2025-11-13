@@ -11,6 +11,6 @@ sqlparse==0.5.3
 typing_extensions==4.15.0
 # Translation dependencies
 google-generativeai
-requests
+requests  # Used to communicate with FlareSolverr (external Docker service required - see FLARESOLVERR.md)
 beautifulsoup4
-playwright
+playwright  # Note: Currently using FlareSolverr instead of Playwright for Cloudflare bypass
